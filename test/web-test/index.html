@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EMV Merchant QRCode Tool</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+    <!--script type="module" src="https://nascentsecuretech.github.io/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js"></script-->
+  </head>
+  <body>
+    <section class="section">
+      <div class="container">
+        <label for="qr-string">QRCode string</label>
+        <textarea id="qr-string" spellcheck="false"
+          style="width: 100%; height: 100px; white-space: nowrap; font-family: 'Courier New'; font-size: 12px;"
+          oninput="decodeCode( this.value.trim() );">
+        </textarea>
+        <br />
+        <label for="decoded">Decoded QR</label>
+        <textarea id="decoded"
+          style="width: 100%; height: 500px">
+        </textarea>
+      </div>
+    </section>
+  </body>
+  <script type="module">
+    import {EMVMerchantQRCode} from "https://nascentsecuretech.github.io/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js";
+
+    function decodeCode( value ) {
+      let qr = new EMVMerchantQRCode( value );
+
+      document.getElementById('decoded').value = JSON.stringify( qr.toJSON(), null, 2 );
+    }
+
+    window.decodeCode = decodeCode;
+  </script>
+
+</html>
