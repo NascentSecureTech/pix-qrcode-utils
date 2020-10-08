@@ -24,12 +24,56 @@
     </section>
   </body>
   <script type="module">
-    import {EMVMerchantQRCode} from "https://nascentsecuretech.github.io/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js";
+    import {EMVMerchantQRCode, QRErrorCode, QRCodeError } from "https://nascentsecuretech.github.io/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js";
+
+    function handleQRError( E ) {
+      let result = "ERROR";
+
+      if ( E instanceof QRCodeError ) {
+        result = QRErrorCode[ E.errorCode ] + " - " + E.message;
+      }
+
+      return result;
+    }
 
     function decodeCode( value ) {
-      let qr = new EMVMerchantQRCode( value );
+      let qr;
+      let result = "";
 
-      document.getElementById('decoded').value = JSON.stringify( qr.toJSON(), null, 2 );
+      if ( value.length ) {
+        result = "OK";
+
+        try {
+          qr = new EMVMerchantQRCode( value );
+
+          qr.validateCode()
+        }
+        catch( E ) {
+          result = handleQRError( E );
+        }
+      }
+
+      let el = document.getElementById('decoded');
+
+      el.classList.remove("has-background-danger");
+      el.classList.remove('has-text-secondary');
+      el.classList.remove( 'is-hidden' );
+
+      switch( result ) {
+        case "":
+          el.classList.add( 'is-hidden' );
+          break;
+
+        case "OK":
+          el.value = JSON.stringify( qr.toJSON(), null, 2 );
+          break;
+
+        default:
+          el.value = result;
+          el.classList.add("has-background-danger");
+          el.classList.add('has-text-secondary');
+          break;
+      }
     }
 
     window.decodeCode = decodeCode;
