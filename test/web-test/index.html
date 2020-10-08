@@ -14,7 +14,12 @@
         <textarea id="qr-string" spellcheck="false"
           style="width: 100%; height: 100px; white-space: nowrap; font-family: 'Courier New'; font-size: 12px;"
           oninput="decodeCode( this.value.trim() );">
+00020101021226840015br.com.sejavero2561apidev.banrisul.com.br/pix/qrcode/1pjcsYDycZeZ03rGqxHIYpsr0WM5204752153039865802BR5912Lojista Ltda6012Porto Alegre61089400000062070503***63046393
         </textarea>
+        <div class="buttons">
+          <button class="button is-primary" onclick="decodeCode( document.getElementById('qr-string').value.trim() );">Decode</button>
+          <button class="button is-secondary" onclick="fixCRC( document.getElementById('qr-string').value.trim() );">CRC</button>
+        </div>
         <br />
         <label for="decoded">Decoded QR</label>
         <textarea id="decoded"
@@ -36,47 +41,65 @@
       return result;
     }
 
-    function decodeCode( value ) {
-      let qr;
-      let result = "";
-
-      if ( value.length ) {
-        result = "OK";
-
-        try {
-          qr = new EMVMerchantQRCode( value );
-
-          qr.validateCode()
-        }
-        catch( E ) {
-          result = handleQRError( E );
-        }
-      }
-
+    function showResult( success, error ) {
       let el = document.getElementById('decoded');
 
       el.classList.remove("has-background-danger");
       el.classList.remove('has-text-secondary');
       el.classList.remove( 'is-hidden' );
 
-      switch( result ) {
-        case "":
-          el.classList.add( 'is-hidden' );
-          break;
+      if ( error && error.length > 0 ) {
+        el.value = error;
+        el.classList.add("has-background-danger");
+        el.classList.add('has-text-secondary');
+      }
+      else if ( success && success.length > 0 ) {
+        el.value = success;
+      }
+      else {
+        el.classList.add( 'is-hidden' );
+      }
+    }
 
-        case "OK":
-          el.value = JSON.stringify( qr.toJSON(), null, 2 );
-          break;
+    function fixCRC( value ) {
+      let $qr = document.getElementById('qr-string');
 
-        default:
-          el.value = result;
-          el.classList.add("has-background-danger");
-          el.classList.add('has-text-secondary');
-          break;
+      try {
+        let qr = EMVMerchantQRCode.parseCode( value );
+
+        $qr.innerText = qr.buildQRString();
+
+        qr.validateCode()
+
+        showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
+      }
+      catch( E ) {
+        showResult( null, handleQRError( E ) );
+      }
+    }
+
+    function decodeCode( value ) {
+      let qr;
+
+      if ( value.length ) {
+        try {
+          qr = EMVMerchantQRCode.parseCode( value );
+
+          qr.validateCode()
+
+          showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
+        }
+        catch( E ) {
+          showResult( null, handleQRError( E ) );
+        }
+      }
+      else {
+        showResult();
       }
     }
 
     window.decodeCode = decodeCode;
+    window.fixCRC = fixCRC;
   </script>
 
 </html>
