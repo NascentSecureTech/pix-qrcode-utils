@@ -1,4 +1,5 @@
 {
+  "name": "pix-qrcode",
   "type": "module",
   "main": "dist/pix-qrcode.bundle.js",
 

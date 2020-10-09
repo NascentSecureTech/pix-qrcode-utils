@@ -46,7 +46,13 @@ export namespace QRCodeValidator {
       throw new QRCodeError( QRErrorCode.CRC_MISMATCH, "Invalid CRC" );
     }
 
-    // 4. Mandatory Elements
+    // 4. At least one MAI
+    let maiList = Array.from( root.elements.keys() ).filter( (v) => ( v >=2 ) && ( v <= 51 ) );
+    if ( maiList.length == 0 ) {
+      throw new QRCodeError( QRErrorCode.MISSING_MANDATORY_ELEMENT, "Must have at least one Merchant Account Information" );
+    }
+
+    // 5. Mandatory Elements
     mandatoryElements.forEach( (tag) => {
       if ( !root.hasElement( tag ) )
         throw new QRCodeError( QRErrorCode.MISSING_MANDATORY_ELEMENT, "Missing mandatory tag (" + tag + ")" );

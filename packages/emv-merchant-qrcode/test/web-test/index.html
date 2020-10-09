@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>EMV Merchant QRCode Tool</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
-    <!--script type="module" src="https://nascentsecuretech.github.io/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js"></script-->
   </head>
   <body>
     <section class="section">
@@ -26,13 +25,13 @@
 
         <label for="decoded">Decoded QR</label>
         <textarea id="decoded"
-          style="width: 100%; height: 500px">
+          style="width: 100%; height: 500px font-family: 'Courier New'; font-size: 12px;">
         </textarea>
       </div>
     </section>
   </body>
   <script type="module">
-    import {EMVMerchantQRCode, QRErrorCode, QRCodeError } from "https://nascentsecuretech.github.io/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js";
+    import {EMVMerchantQRCode, QRErrorCode, QRCodeError } from "https://nascentsecuretech.github.io/pix-qrcode-utils/packages/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js";
 
     function handleQRError( E ) {
       let result = "ERROR";

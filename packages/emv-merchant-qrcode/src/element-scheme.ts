@@ -1,9 +1,21 @@
-export interface QRSchemeElement {
+interface DataScheme {
+  name: string;
+
+  type?: 'string'|'integer'|'boolean';
+
+  pattern?: string;
+
+  // if type=='string'
+  minLength?: number;
+  maxLength?: number;
+}
+
+export interface QRSchemeElement extends DataScheme {
   lastTag?: number;
 
   optional?: boolean;
 
-  name: string;
+  pattern?: string;
 
   elementMap?: QRElementSchemeMap;
 }
@@ -102,10 +114,12 @@ const merchantInformationLanguageTemplateMap = {
 const rootSchemeMap: QRElementSchemeMap = {
   0: {
     name: 'Payload Format Indicator',
+    pattern: '^01$'
   },
   1: {
     name: 'Point of Initiation Method',
     optional: true,
+    pattern: '^1[12]\d\d$'
   },
   2: {
     lastTag: 25,
@@ -140,6 +154,7 @@ const rootSchemeMap: QRElementSchemeMap = {
   },
   58: {
     name: 'Country Code',
+    minLength: 2, maxLength: 2,
   },
   59: {
     name: 'Merchant Name',

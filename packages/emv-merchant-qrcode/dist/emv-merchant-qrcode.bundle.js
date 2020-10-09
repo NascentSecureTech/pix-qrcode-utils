@@ -203,6 +203,10 @@ System.register("qrcode-validator", ["crc"], function (exports_3, context_3) {
                     if (calculatedCRC != crcEl.content) {
                         throw new QRCodeError(QRErrorCode.CRC_MISMATCH, "Invalid CRC");
                     }
+                    let maiList = Array.from(root.elements.keys()).filter((v) => (v >= 2) && (v <= 51));
+                    if (maiList.length == 0) {
+                        throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, "Must have at least one Merchant Account Information");
+                    }
                     mandatoryElements.forEach((tag) => {
                         if (!root.hasElement(tag))
                             throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, "Missing mandatory tag (" + tag + ")");
@@ -238,7 +242,7 @@ System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exp
                     this._content = content;
                     switch (type) {
                         case "root":
-                        case "container":
+                        case "template":
                             this.elements = this.parseElementSequence(content, baseOffset);
                             break;
                         default:
@@ -247,6 +251,7 @@ System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exp
                 }
                 isType(type) { return this.type == type; }
                 ;
+                isTemplate() { return this.isType('template') || this.isType('identified-template'); }
                 get content() {
                     return this._content;
                 }
@@ -276,10 +281,10 @@ System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exp
                     }
                     return elements;
                 }
-                parseAsContainer() {
-                    if (!this.isType('container')) {
+                parseAsTemplate(isIdentified) {
+                    if (!this.isTemplate()) {
                         this.elements = this.parseElementSequence(this.content, this.baseOffset);
-                        this.type = 'container';
+                        this.type = isIdentified ? 'identified-template' : 'template';
                     }
                     return this;
                 }
@@ -337,6 +342,19 @@ System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exp
                         content = this.buildTagLength() + content;
                     }
                     return content;
+                }
+                findIdentifiedTemplate(id, first = 0, last = 99) {
+                    let found = [];
+                    this.elements.forEach((element) => {
+                        if (element.isType('identified-template')
+                            && element.tag >= first
+                            && element.tag <= last
+                            && element.hasElement(0)
+                            && element.getElement(0).content == id) {
+                            found.push(element);
+                        }
+                    });
+                    return found;
                 }
             };
             exports_4("QRCodeNode", QRCodeNode);
@@ -438,10 +456,12 @@ System.register("element-scheme", [], function (exports_5, context_5) {
             rootSchemeMap = {
                 0: {
                     name: 'Payload Format Indicator',
+                    pattern: '^01$'
                 },
                 1: {
                     name: 'Point of Initiation Method',
                     optional: true,
+                    pattern: '^1[12]\d\d$'
                 },
                 2: {
                     lastTag: 25,
@@ -473,6 +493,7 @@ System.register("element-scheme", [], function (exports_5, context_5) {
                 },
                 58: {
                     name: 'Country Code',
+                    minLength: 2, maxLength: 2,
                 },
                 59: {
                     name: 'Merchant Name',
@@ -558,19 +579,19 @@ System.register("emv-merchant-qrcode", ["qrcode-node", "qrcode-validator", "crc"
                         ...params
                     };
                     let root = new EMVMerchantQRCode(qrCode, params);
-                    function toContainer(node, tag, lastTag) {
+                    function toContainer(node, isIdentified, tag, lastTag) {
                         for (let index = tag; index <= (lastTag ?? tag); ++index) {
                             if (node.hasElement(index))
-                                node.getElement(index).parseAsContainer();
+                                node.getElement(index).parseAsTemplate(isIdentified);
                         }
                     }
-                    toContainer(root, 26, 51);
+                    toContainer(root, true, 26, 51);
                     if (root.hasElement(62)) {
-                        toContainer(root, 62);
-                        toContainer(root.getElement(62), 50, 99);
+                        toContainer(root, false, 62);
+                        toContainer(root.getElement(62), true, 50, 99);
                     }
-                    toContainer(root, 64);
-                    toContainer(root, 80, 99);
+                    toContainer(root, false, 64);
+                    toContainer(root, true, 80, 99);
                     if (params.validate)
                         qrcode_validator_ts_2.QRCodeValidator.validateRoot(root);
                     return root;

@@ -203,6 +203,10 @@ System.register("emv-merchant-qrcode/src/qrcode-validator", ["emv-merchant-qrcod
                     if (calculatedCRC != crcEl.content) {
                         throw new QRCodeError(QRErrorCode.CRC_MISMATCH, "Invalid CRC");
                     }
+                    let maiList = Array.from(root.elements.keys()).filter((v) => (v >= 2) && (v <= 51));
+                    if (maiList.length == 0) {
+                        throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, "Must have at least one Merchant Account Information");
+                    }
                     mandatoryElements.forEach((tag) => {
                         if (!root.hasElement(tag))
                             throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, "Missing mandatory tag (" + tag + ")");
@@ -452,10 +456,12 @@ System.register("emv-merchant-qrcode/src/element-scheme", [], function (exports_
             rootSchemeMap = {
                 0: {
                     name: 'Payload Format Indicator',
+                    pattern: '^01$'
                 },
                 1: {
                     name: 'Point of Initiation Method',
                     optional: true,
+                    pattern: '^1[12]\d\d$'
                 },
                 2: {
                     lastTag: 25,
@@ -487,6 +493,7 @@ System.register("emv-merchant-qrcode/src/element-scheme", [], function (exports_
                 },
                 58: {
                     name: 'Country Code',
+                    minLength: 2, maxLength: 2,
                 },
                 59: {
                     name: 'Merchant Name',
@@ -701,8 +708,9 @@ System.register("pix-qrcode/src/pix-qrcode", ["pix-qrcode/src/deps", "pix-qrcode
             GUI_PIX = 'br.gov.bcb.pix';
             PIXQRCode = class PIXQRCode {
                 constructor(qrCode, params = defaultParams) {
-                    this.emvQRCode = deps_ts_1.EMVMerchantQRCode.parseCode(qrCode, params);
+                    this._emvQRCode = deps_ts_1.EMVMerchantQRCode.parseCode(qrCode, params);
                 }
+                get emvQRCode() { return this._emvQRCode; }
                 static parseCode(qrCode, params = defaultParams) {
                     params = {
                         ...defaultParams,
@@ -736,7 +744,6 @@ System.register("pix-qrcode/src/pix-qrcode", ["pix-qrcode/src/deps", "pix-qrcode
                         }
                     }
                 }
-                dumpCode() { return this.emvQRCode.dumpCode(); }
             };
             exports_9("PIXQRCode", PIXQRCode);
         }

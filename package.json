@@ -1,14 +1,13 @@
 {
-  "name": "emv-merchant-qrcode",
   "type": "module",
   "main": "dist/emv-merchant-qrcode.bundle.js",
-
   "scripts": {
-    "bundle": "deno bundle src/emv-merchant-qrcode.ts dist/emv-merchant-qrcode.bundle.js"
+    "bundle": "lerna run bundle"
   },
-
   "devDependencies": {
+    "lerna": "^3.22.1",
     "typescript": "^4.0.2",
     "typescript-deno-plugin": "^1.31.0"
-  }
+  },
+  "name": "pix-qrcode-utils"
 }
