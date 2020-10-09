@@ -6,11 +6,12 @@ export const TAG_CRC = 63;
 
 type QRElementMap = Map<number, QRCodeNode>;
 
-type QRNodeType = 'root' | 'element' | 'container' | 'void';
+type QRNodeType = 'root' | 'element' | 'template' | 'identified-template' | 'void';
 
 export class QRCodeNode {
   type: QRNodeType;
   isType( type: QRNodeType ) { return this.type == type };
+  isTemplate() { return this.isType( 'template' ) || this.isType('identified-template')}
 
   protected _content: string;
   get content(): string {
@@ -38,7 +39,7 @@ export class QRCodeNode {
 
     switch( type ) {
       case "root":
-      case "container":
+      case "template":
         this.elements = this.parseElementSequence( content, baseOffset );
         break;
 
@@ -80,10 +81,10 @@ export class QRCodeNode {
     return elements;
   }
 
-  parseAsContainer(): this {
-    if ( !this.isType( 'container' ) ) {
+  parseAsTemplate( isIdentified: boolean ): this {
+    if ( !this.isTemplate( ) ) {
       this.elements = this.parseElementSequence( this.content, this.baseOffset );
-      this.type = 'container';
+      this.type = isIdentified ? 'identified-template' : 'template';
     }
 
     return this;
@@ -168,5 +169,21 @@ export class QRCodeNode {
     }
 
     return content;
+  }
+
+  findIdentifiedTemplate( id: string, first: number = 0, last: number = 99 ): QRCodeNode[] {
+    let found: QRCodeNode[] = [];
+
+    this.elements.forEach( (element) => {
+      if ( element.isType('identified-template')
+        && element.tag! >= first
+        && element.tag! <= last
+        && element.hasElement( 0 )
+        && element.getElement(0).content == id ) {
+          found.push( element );
+        }
+    })
+
+    return found;
   }
 }

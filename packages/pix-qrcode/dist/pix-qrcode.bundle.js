@@ -98,7 +98,7 @@ let System, __instantiate;
   };
 })();
 
-System.register("data-utils", [], function (exports_1, context_1) {
+System.register("emv-merchant-qrcode/src/data-utils", [], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     function stringToHex(str) {
@@ -126,7 +126,7 @@ System.register("data-utils", [], function (exports_1, context_1) {
         }
     };
 });
-System.register("crc", ["data-utils"], function (exports_2, context_2) {
+System.register("emv-merchant-qrcode/src/crc", ["emv-merchant-qrcode/src/data-utils"], function (exports_2, context_2) {
     "use strict";
     var data_utils_ts_1;
     var __moduleName = context_2 && context_2.id;
@@ -156,7 +156,7 @@ System.register("crc", ["data-utils"], function (exports_2, context_2) {
         }
     };
 });
-System.register("qrcode-validator", ["crc"], function (exports_3, context_3) {
+System.register("emv-merchant-qrcode/src/qrcode-validator", ["emv-merchant-qrcode/src/crc"], function (exports_3, context_3) {
     "use strict";
     var crc_ts_1, QRErrorCode, QRCodeError, mandatoryElements, QRCodeValidator;
     var __moduleName = context_3 && context_3.id;
@@ -214,7 +214,7 @@ System.register("qrcode-validator", ["crc"], function (exports_3, context_3) {
         }
     };
 });
-System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exports_4, context_4) {
+System.register("emv-merchant-qrcode/src/qrcode-node", ["emv-merchant-qrcode/src/data-utils", "emv-merchant-qrcode/src/qrcode-validator"], function (exports_4, context_4) {
     "use strict";
     var data_utils_ts_2, qrcode_validator_ts_1, TAG_INIT, TAG_CRC, QRCodeNode;
     var __moduleName = context_4 && context_4.id;
@@ -238,7 +238,7 @@ System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exp
                     this._content = content;
                     switch (type) {
                         case "root":
-                        case "container":
+                        case "template":
                             this.elements = this.parseElementSequence(content, baseOffset);
                             break;
                         default:
@@ -247,6 +247,7 @@ System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exp
                 }
                 isType(type) { return this.type == type; }
                 ;
+                isTemplate() { return this.isType('template') || this.isType('identified-template'); }
                 get content() {
                     return this._content;
                 }
@@ -276,10 +277,10 @@ System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exp
                     }
                     return elements;
                 }
-                parseAsContainer() {
-                    if (!this.isType('container')) {
+                parseAsTemplate(isIdentified) {
+                    if (!this.isTemplate()) {
                         this.elements = this.parseElementSequence(this.content, this.baseOffset);
-                        this.type = 'container';
+                        this.type = isIdentified ? 'identified-template' : 'template';
                     }
                     return this;
                 }
@@ -338,15 +339,201 @@ System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exp
                     }
                     return content;
                 }
+                findIdentifiedTemplate(id, first = 0, last = 99) {
+                    let found = [];
+                    this.elements.forEach((element) => {
+                        if (element.isType('identified-template')
+                            && element.tag >= first
+                            && element.tag <= last
+                            && element.hasElement(0)
+                            && element.getElement(0).content == id) {
+                            found.push(element);
+                        }
+                    });
+                    return found;
+                }
             };
             exports_4("QRCodeNode", QRCodeNode);
         }
     };
 });
-System.register("emv-merchant-qrcode", ["qrcode-node", "qrcode-validator", "crc"], function (exports_5, context_5) {
+System.register("emv-merchant-qrcode/src/element-scheme", [], function (exports_5, context_5) {
     "use strict";
-    var qrcode_node_ts_1, qrcode_validator_ts_2, crc_ts_2, defaultParams, EMVMerchantQRCode;
+    var paymentSystemSpecificTemplateMap, reservedTemplateMap, additionalDataFieldMap, merchantInformationLanguageTemplateMap, rootSchemeMap, rootScheme;
     var __moduleName = context_5 && context_5.id;
+    return {
+        setters: [],
+        execute: function () {
+            paymentSystemSpecificTemplateMap = {
+                0: {
+                    name: 'Globally Unique Identifier',
+                    optional: true,
+                },
+                1: {
+                    lastTag: 99,
+                    name: 'Payment System specific',
+                    optional: true,
+                },
+            };
+            reservedTemplateMap = {
+                0: {
+                    name: 'Globally Unique Identifier',
+                    optional: true,
+                },
+                1: {
+                    lastTag: 99,
+                    name: 'Context specific data',
+                    optional: true,
+                },
+            };
+            additionalDataFieldMap = {
+                1: {
+                    name: 'Bill Number',
+                    optional: true,
+                },
+                2: {
+                    name: 'Mobile Number',
+                    optional: true,
+                },
+                3: {
+                    name: 'Store Label',
+                    optional: true,
+                },
+                4: {
+                    name: 'Loyalty Number',
+                    optional: true,
+                },
+                5: {
+                    name: 'Reference Label',
+                    optional: true,
+                },
+                6: {
+                    name: 'Customer Label',
+                    optional: true,
+                },
+                7: {
+                    name: 'Terminal Label',
+                    optional: true,
+                },
+                8: {
+                    name: 'Purpose of Transaction',
+                    optional: true,
+                },
+                9: {
+                    name: 'Additional Consumer Data Request',
+                    optional: true,
+                },
+                10: {
+                    lastTag: 49,
+                    name: 'RFU for EMVCo',
+                    optional: true,
+                },
+                50: {
+                    lastTag: 99,
+                    name: 'Payment System specific template',
+                    optional: true,
+                    elementMap: paymentSystemSpecificTemplateMap
+                },
+            };
+            merchantInformationLanguageTemplateMap = {
+                0: {
+                    name: 'Language Preference',
+                    optional: true,
+                },
+                1: {
+                    name: 'Merchant Name - Alternate Language',
+                    optional: true,
+                },
+                3: {
+                    name: 'Merchant City - Alternate Language',
+                    optional: true,
+                },
+            };
+            rootSchemeMap = {
+                0: {
+                    name: 'Payload Format Indicator',
+                },
+                1: {
+                    name: 'Point of Initiation Method',
+                    optional: true,
+                },
+                2: {
+                    lastTag: 25,
+                    name: 'Merchant Account Information',
+                },
+                26: {
+                    lastTag: 51,
+                    name: 'Merchant Account Information',
+                    elementMap: paymentSystemSpecificTemplateMap
+                },
+                52: {
+                    name: 'Merchant Category Code',
+                },
+                53: {
+                    name: 'Transaction Currency',
+                },
+                54: {
+                    name: 'Transaction Amount',
+                },
+                55: {
+                    name: 'Tip or Convenience Indicator',
+                    optional: true,
+                },
+                56: {
+                    name: 'Value of Convenience Fee Fixed',
+                },
+                57: {
+                    name: 'Value of Convenience Fee Percentage',
+                },
+                58: {
+                    name: 'Country Code',
+                },
+                59: {
+                    name: 'Merchant Name',
+                },
+                60: {
+                    name: 'Merchant City',
+                },
+                61: {
+                    name: 'Postal Code',
+                    optional: true,
+                },
+                62: {
+                    name: 'Additional Data Field Template',
+                    optional: true,
+                    elementMap: additionalDataFieldMap,
+                },
+                63: {
+                    name: 'CRC',
+                },
+                64: {
+                    name: 'Merchant Information — Language Template',
+                    optional: true,
+                    elementMap: merchantInformationLanguageTemplateMap
+                },
+                65: {
+                    lastTag: 79,
+                    name: 'RFU for EMVCo',
+                    optional: true,
+                },
+                80: {
+                    lastTag: 99,
+                    name: 'Unreserved Templates',
+                    optional: true,
+                    elementMap: reservedTemplateMap
+                },
+            };
+            exports_5("rootScheme", rootScheme = {
+                name: 'root',
+                elementMap: rootSchemeMap
+            });
+        }
+    };
+});
+System.register("emv-merchant-qrcode/src/emv-merchant-qrcode", ["emv-merchant-qrcode/src/qrcode-node", "emv-merchant-qrcode/src/qrcode-validator", "emv-merchant-qrcode/src/crc", "emv-merchant-qrcode/src/element-scheme"], function (exports_6, context_6) {
+    "use strict";
+    var qrcode_node_ts_1, qrcode_validator_ts_2, crc_ts_2, element_scheme_ts_1, defaultParams, EMVMerchantQRCode;
+    var __moduleName = context_6 && context_6.id;
     function convertCode(qrCode, _encoding) {
         return qrCode ?? '';
     }
@@ -357,13 +544,16 @@ System.register("emv-merchant-qrcode", ["qrcode-node", "qrcode-validator", "crc"
             },
             function (qrcode_validator_ts_2_1) {
                 qrcode_validator_ts_2 = qrcode_validator_ts_2_1;
-                exports_5({
+                exports_6({
                     "QRCodeError": qrcode_validator_ts_2_1["QRCodeError"],
                     "QRErrorCode": qrcode_validator_ts_2_1["QRErrorCode"]
                 });
             },
             function (crc_ts_2_1) {
                 crc_ts_2 = crc_ts_2_1;
+            },
+            function (element_scheme_ts_1_1) {
+                element_scheme_ts_1 = element_scheme_ts_1_1;
             }
         ],
         execute: function () {
@@ -382,19 +572,19 @@ System.register("emv-merchant-qrcode", ["qrcode-node", "qrcode-validator", "crc"
                         ...params
                     };
                     let root = new EMVMerchantQRCode(qrCode, params);
-                    function toContainer(node, tag, lastTag) {
+                    function toContainer(node, isIdentified, tag, lastTag) {
                         for (let index = tag; index <= (lastTag ?? tag); ++index) {
                             if (node.hasElement(index))
-                                node.getElement(index).parseAsContainer();
+                                node.getElement(index).parseAsTemplate(isIdentified);
                         }
                     }
-                    toContainer(root, 26, 51);
+                    toContainer(root, true, 26, 51);
                     if (root.hasElement(62)) {
-                        toContainer(root, 62);
-                        toContainer(root.getElement(62), 50, 99);
+                        toContainer(root, false, 62);
+                        toContainer(root.getElement(62), true, 50, 99);
                     }
-                    toContainer(root, 64);
-                    toContainer(root, 80, 99);
+                    toContainer(root, false, 64);
+                    toContainer(root, true, 80, 99);
                     if (params.validate)
                         qrcode_validator_ts_2.QRCodeValidator.validateRoot(root);
                     return root;
@@ -413,13 +603,147 @@ System.register("emv-merchant-qrcode", ["qrcode-node", "qrcode-validator", "crc"
                     this.content = content = content + crc;
                     return content;
                 }
+                dumpCode() {
+                    function dumpNode(node, scheme, indent) {
+                        let result = "";
+                        if (node.isType('element')) {
+                            result += indent + ("00" + node.tag).slice(-2) + ' (' + scheme.name + ')' + "\n";
+                            result += indent + '  ' + node.content + "\n";
+                        }
+                        else {
+                            if (!node.isType('root')) {
+                                result += indent + '(' + ("00" + node.tag).slice(-2) + '): ' + scheme.name + "\n";
+                                indent += "  ";
+                            }
+                            node.elements.forEach((element) => {
+                                let nodeScheme = scheme?.elementMap?.[element.tag] ?? { name: 'unknown', elementMap: {} };
+                                result += dumpNode(element, nodeScheme, indent);
+                            });
+                        }
+                        return result;
+                    }
+                    return dumpNode(this, element_scheme_ts_1.rootScheme, "");
+                }
             };
-            exports_5("EMVMerchantQRCode", EMVMerchantQRCode);
+            exports_6("EMVMerchantQRCode", EMVMerchantQRCode);
+        }
+    };
+});
+System.register("pix-qrcode/src/deps", ["emv-merchant-qrcode/src/emv-merchant-qrcode"], function (exports_7, context_7) {
+    "use strict";
+    var __moduleName = context_7 && context_7.id;
+    function exportStar_1(m) {
+        var exports = {};
+        for (var n in m) {
+            if (n !== "default") exports[n] = m[n];
+        }
+        exports_7(exports);
+    }
+    return {
+        setters: [
+            function (emv_merchant_qrcode_ts_1_1) {
+                exportStar_1(emv_merchant_qrcode_ts_1_1);
+            }
+        ],
+        execute: function () {
+        }
+    };
+});
+System.register("pix-qrcode/src/pix-qrcode-validator", [], function (exports_8, context_8) {
+    "use strict";
+    var PIXQRErrorCode, PIXQRCodeError;
+    var __moduleName = context_8 && context_8.id;
+    return {
+        setters: [],
+        execute: function () {
+            (function (PIXQRErrorCode) {
+                PIXQRErrorCode[PIXQRErrorCode["OK"] = 0] = "OK";
+                PIXQRErrorCode[PIXQRErrorCode["INVALID_QRCODE"] = 1] = "INVALID_QRCODE";
+                PIXQRErrorCode[PIXQRErrorCode["CRC_MISMATCH"] = 2] = "CRC_MISMATCH";
+                PIXQRErrorCode[PIXQRErrorCode["MISSING_MANDATORY_ELEMENT"] = 3] = "MISSING_MANDATORY_ELEMENT";
+                PIXQRErrorCode[PIXQRErrorCode["MISSING_PIX_MAI"] = 4] = "MISSING_PIX_MAI";
+                PIXQRErrorCode[PIXQRErrorCode["PIX_MAI_INVALID"] = 5] = "PIX_MAI_INVALID";
+                PIXQRErrorCode[PIXQRErrorCode["DUPLICATE_PIX_MAI"] = 6] = "DUPLICATE_PIX_MAI";
+            })(PIXQRErrorCode || (PIXQRErrorCode = {}));
+            exports_8("PIXQRErrorCode", PIXQRErrorCode);
+            PIXQRCodeError = class PIXQRCodeError extends Error {
+                constructor(errorCode, message) {
+                    super(message);
+                    this.errorCode = errorCode;
+                }
+            };
+            exports_8("PIXQRCodeError", PIXQRCodeError);
+        }
+    };
+});
+System.register("pix-qrcode/src/pix-qrcode", ["pix-qrcode/src/deps", "pix-qrcode/src/pix-qrcode-validator"], function (exports_9, context_9) {
+    "use strict";
+    var deps_ts_1, pix_qrcode_validator_ts_1, PIX_MAI_DICT, PIX_MAI_URL, defaultParams, GUI_PIX, PIXQRCode;
+    var __moduleName = context_9 && context_9.id;
+    return {
+        setters: [
+            function (deps_ts_1_1) {
+                deps_ts_1 = deps_ts_1_1;
+            },
+            function (pix_qrcode_validator_ts_1_1) {
+                pix_qrcode_validator_ts_1 = pix_qrcode_validator_ts_1_1;
+            }
+        ],
+        execute: function () {
+            exports_9("PIXQRErrorCode", pix_qrcode_validator_ts_1.PIXQRErrorCode);
+            exports_9("PIXQRCodeError", pix_qrcode_validator_ts_1.PIXQRCodeError);
+            PIX_MAI_DICT = 1;
+            PIX_MAI_URL = 25;
+            defaultParams = {
+                encoding: 'utf8',
+                validate: false,
+            };
+            GUI_PIX = 'br.gov.bcb.pix';
+            PIXQRCode = class PIXQRCode {
+                constructor(qrCode, params = defaultParams) {
+                    this.emvQRCode = deps_ts_1.EMVMerchantQRCode.parseCode(qrCode, params);
+                }
+                static parseCode(qrCode, params = defaultParams) {
+                    params = {
+                        ...defaultParams,
+                        ...params
+                    };
+                    let pixQRCode = new PIXQRCode(qrCode, params);
+                    if (params.validate)
+                        pixQRCode.validateCode();
+                    return pixQRCode;
+                }
+                validateCode() {
+                    let emv = this.emvQRCode;
+                    emv.validateCode();
+                    let maiList = emv.findIdentifiedTemplate(GUI_PIX, 26, 51);
+                    if (maiList.length == 0) {
+                        throw new pix_qrcode_validator_ts_1.PIXQRCodeError(pix_qrcode_validator_ts_1.PIXQRErrorCode.MISSING_PIX_MAI, "PIX MAI not found");
+                    }
+                    if (maiList.length > 1) {
+                        throw new pix_qrcode_validator_ts_1.PIXQRCodeError(pix_qrcode_validator_ts_1.PIXQRErrorCode.DUPLICATE_PIX_MAI, "PIX MAI duplicated");
+                    }
+                    let pixMAI = maiList[0];
+                    let pixStatic = pixMAI.hasElement(PIX_MAI_DICT);
+                    if (pixStatic) {
+                        if (pixMAI.hasElement(PIX_MAI_URL)) {
+                            throw new pix_qrcode_validator_ts_1.PIXQRCodeError(pix_qrcode_validator_ts_1.PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains both DICT and URL elements");
+                        }
+                    }
+                    else {
+                        if (!pixMAI.hasElement(PIX_MAI_URL)) {
+                            throw new pix_qrcode_validator_ts_1.PIXQRCodeError(pix_qrcode_validator_ts_1.PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements");
+                        }
+                    }
+                }
+                dumpCode() { return this.emvQRCode.dumpCode(); }
+            };
+            exports_9("PIXQRCode", PIXQRCode);
         }
     };
 });
 
-const __exp = __instantiate("emv-merchant-qrcode", false);
-export const QRCodeError = __exp["QRCodeError"];
-export const QRErrorCode = __exp["QRErrorCode"];
-export const EMVMerchantQRCode = __exp["EMVMerchantQRCode"];
+const __exp = __instantiate("pix-qrcode/src/pix-qrcode", false);
+export const PIXQRErrorCode = __exp["PIXQRErrorCode"];
+export const PIXQRCodeError = __exp["PIXQRCodeError"];
+export const PIXQRCode = __exp["PIXQRCode"];

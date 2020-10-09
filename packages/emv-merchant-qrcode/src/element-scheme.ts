@@ -99,7 +99,7 @@ const merchantInformationLanguageTemplateMap = {
   },
 }
 
-export const emvElementScheme: QRElementSchemeMap = {
+const rootSchemeMap: QRElementSchemeMap = {
   0: {
     name: 'Payload Format Indicator',
   },
@@ -176,3 +176,8 @@ export const emvElementScheme: QRElementSchemeMap = {
     elementMap: reservedTemplateMap
   },
 };
+
+export const rootScheme = {
+  name: 'root',
+  elementMap: rootSchemeMap
+}

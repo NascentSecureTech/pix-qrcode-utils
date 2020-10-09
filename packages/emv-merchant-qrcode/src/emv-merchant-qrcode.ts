@@ -2,6 +2,7 @@ import { QRCodeNode, TAG_CRC } from './qrcode-node.ts';
 import { QRCodeValidator } from './qrcode-validator.ts';
 import { computeCRC } from './crc.ts';
 export { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
+import { QRSchemeElement, rootScheme } from './element-scheme.ts';
 
 export interface EMVMerchantQRParams {
   encoding?: 'utf8' |'base64';
@@ -38,28 +39,28 @@ export class EMVMerchantQRCode extends QRCodeNode {
 
     let root = new EMVMerchantQRCode( qrCode, params );
 
-    function toContainer( node: QRCodeNode, tag: number, lastTag?: number ) {
+    function toContainer( node: QRCodeNode, isIdentified: boolean, tag: number, lastTag?: number ) {
       for( let index = tag; index <= (lastTag ?? tag); ++index ) {
         if ( node.hasElement( index ) )
-          node.getElement( index ).parseAsContainer();
+          node.getElement( index ).parseAsTemplate( isIdentified );
       }
     }
 
     // process MAI 26..51
-    toContainer( root, 26, 51 );
+    toContainer( root, true, 26, 51 );
 
     // EL62 Additional Data Field Template
     if ( root.hasElement( 62 ) ) {
-      toContainer( root, 62 );
+      toContainer( root, false, 62 );
 
       // Payment system specific
-      toContainer( root.getElement( 62 ), 50, 99 );
+      toContainer( root.getElement( 62 ), true, 50, 99 );
     }
 
     // EL64 = Language stuff
-    toContainer( root, 64 );
+    toContainer( root, false, 64 );
 
-    toContainer( root, 80, 99 );
+    toContainer( root, true, 80, 99 );
 
     if ( params.validate )
       QRCodeValidator.validateRoot( root );
@@ -97,4 +98,31 @@ export class EMVMerchantQRCode extends QRCodeNode {
     return content;
   }
 
+  dumpCode() {
+    function dumpNode( node: QRCodeNode, scheme: QRSchemeElement, indent: string ): string {
+      let result = "";
+
+      if ( node.isType( 'element') ) {
+        result += indent + ("00"+node.tag).slice(-2)+ ' (' + scheme.name + ')' + "\n";
+        result += indent + '  '+node.content + "\n";
+      }
+      else {
+        if ( !node.isType( 'root' ) )  {
+          result += indent + '('+ ("00"+node.tag).slice(-2)+ '): ' + scheme.name + "\n";
+
+          indent += "  ";
+        }
+
+        node.elements.forEach( (element: QRCodeNode ) => {
+          let nodeScheme: QRSchemeElement = scheme?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
+
+          result += dumpNode( element, nodeScheme, indent );
+        })
+      }
+
+      return result;
+    }
+
+    return dumpNode( this, rootScheme, "" );
+  }
 }

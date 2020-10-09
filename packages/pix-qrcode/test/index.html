@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EMV Merchant QRCode Tool</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+    <!--script type="module" src="https://nascentsecuretech.github.io/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js"></script-->
+  </head>
+  <body>
+    <section class="section">
+      <div class="container">
+        <label for="qr-string">QRCode string</label>
+        <textarea id="qr-string" spellcheck="false"
+          style="width: 100%; height: 100px; word-break: break-all; font-family: 'Courier New'; font-size: 12px;"
+          oninput="decodeCode( this.value.trim() );">
+00020101021226880014br.gov.bcb.pix2566ww4.banrisul.com.br/bqq/api/pix/qrcode/QxgfFfpI8QzfEEedoZJNLf4bor85204752153039865802BR5921Casa das Pipocas Ltda6012Porto Alegre61089400000062070503***63042DA6
+        </textarea>
+
+        <div class="buttons">
+          <button class="button is-primary" onclick="decodeCode( document.getElementById('qr-string').value.trim() );">Decode</button>
+          <button class="button is-secondary" onclick="fixCRC( document.getElementById('qr-string').value.trim() );">CRC</button>
+        </div>
+
+        <br />
+
+        <label for="decoded">Decoded QR</label>
+        <textarea id="decoded"
+          style="width: 100%; height: 500px">
+        </textarea>
+      </div>
+    </section>
+  </body>
+  <script type="module">
+    import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError } from "../dist/pix-qrcode.bundle.js";
+
+    function handleQRError( E ) {
+      let result = "ERROR";
+
+      if ( E instanceof PIXQRCodeError ) {
+        result = PIXQRErrorCode[ E.errorCode ] + " - " + E.message;
+      }
+
+      return result;
+    }
+
+    function showResult( success, error ) {
+      let el = document.getElementById('decoded');
+
+      el.classList.remove("has-background-danger");
+      el.classList.remove('has-text-secondary');
+      el.classList.remove( 'is-hidden' );
+
+      if ( error && error.length > 0 ) {
+        el.value = error;
+        el.classList.add("has-background-danger");
+        el.classList.add('has-text-secondary');
+      }
+      else if ( success && success.length > 0 ) {
+        el.value = success;
+      }
+      else {
+        el.classList.add( 'is-hidden' );
+      }
+    }
+
+    function fixCRC( value ) {
+      let $qr = document.getElementById('qr-string');
+
+      try {
+        let qr = PIXQRCode.parseCode( value );
+
+        $qr.innerText = qr.buildQRString();
+
+        qr.validateCode()
+
+        showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
+      }
+      catch( E ) {
+        showResult( null, handleQRError( E ) );
+      }
+    }
+
+    function decodeCode( value ) {
+      let qr;
+
+      if ( value.length ) {
+        try {
+          qr = PIXQRCode.parseCode( value );
+
+          qr.validateCode()
+
+          //showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
+          showResult( qr.emvQRCode.dumpCode() );
+        }
+        catch( E ) {
+          showResult( null, handleQRError( E ) );
+        }
+      }
+      else {
+        showResult();
+      }
+    }
+
+    window.decodeCode = decodeCode;
+    window.fixCRC = fixCRC;
+  </script>
+
+</html>
