@@ -179,7 +179,7 @@ export class QRCodeNode {
         && element.tag! >= first
         && element.tag! <= last
         && element.hasElement( 0 )
-        && element.getElement(0).content == id ) {
+        && element.getElement(0).content.toUpperCase() == id.toUpperCase() ) {
           found.push( element );
         }
     })
