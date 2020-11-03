@@ -13,7 +13,7 @@ const defaultParams: PIXQRCodeParams = {
   validate: false,
 }
 
-let GUI_PIX = 'br.gov.bcb.pix';
+export let GUI_PIX = 'br.gov.bcb.pix';
 
 export class PIXQRCode {
   protected _emvQRCode: EMVMerchantQRCode;
@@ -76,5 +76,25 @@ export class PIXQRCode {
     }
 
     //
+  }
+
+  isPIX( test: "pix"|"valid"|"static"|"dynamic"): boolean {
+    let maiList = this.emvQRCode.findIdentifiedTemplate( GUI_PIX, 26, 51 );
+
+    let hasPIX = ( maiList.length == 1 );
+    if ( !hasPIX )
+      return false;
+
+    let pixMAI = maiList[ 0 ];
+
+    let isStatic = pixMAI.hasElement( PIX_MAI_DICT );
+    let isDynamic = pixMAI.hasElement( PIX_MAI_URL );
+
+    switch( test ) {
+      case "pix": return true;
+      case "valid": return isStatic || isDynamic;
+      case "static": return isStatic;
+      case "dynamic": return isDynamic;
+    }
   }
 }

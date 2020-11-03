@@ -4,16 +4,34 @@ import { PIXQRCode, GUI_PIX } from '../../pix-qrcode/src/pix-qrcode.ts';
 
 //let url = "apidev.banrisul.com.br/pix/qrcode/R4upP-FJICfcIcsouWXSyar1F0Q";
 
+export interface PIXFetchResults {
+  jwsString: string;
+
+  jws: {
+    hdr: Uint8Array;
+    payload: Uint8Array;
+    signature: Uint8Array;
+  };
+
+  header: any;
+  payload: PIXPayload;
+}
+
 export class PIXPayloadRetriever {
   constructor( ) {
 
   }
 
-  async fetchPayload( url: string ): Promise<PIXPayload | void> {
+  async fetchPayload( url: string ): Promise<PIXFetchResults | void> {
+    const opts: RequestInit = { 
+      mode: 'no-cors',
+    };
+
+
     /**
      * Output: JSON Data
      */
-    let pl = await fetch( "https://" + url )
+    let pl = await fetch( "https://" + url, opts )
       .then( (response) => {
       //  console.log("Response", response);
         if ( !response.ok )
@@ -22,21 +40,31 @@ export class PIXPayloadRetriever {
         return response.text();
       })
       .then( (jws:string ) => {
-        //console.log("JWS", jws);
         let parts = jws.split('.')
-          .map( (b64) => base64.toUint8Array( b64 ) )
-          .map( (u8) => new TextDecoder().decode( u8 ) );
+          .map( (b64) => base64.toUint8Array( b64 ) );
 
-        return parts[1];
+        let jsons = parts.map( (u8) => new TextDecoder().decode( u8 ) );
+
+        let pixFetch: PIXFetchResults = {
+          jwsString: jws,
+
+          jws: { 
+             hdr: parts[0], 
+             payload: parts[1],
+             signature: parts[2]
+          },
+
+          header: JSON.parse( jsons[0] ),
+
+          payload: ( JSON.parse( jsons[1] ) as any) as PIXPayload
+        };
+
+        return pixFetch;;
       })
-      .then( (json: string ) => {
-         let payload = JSON.parse( json );
-
-         //console.log( payload );
-
-         return (payload as any) as PIXPayload;
-      })
-      .catch( (error) => console.log(error) );
+      .catch( (error) => {
+        console.log(error);
+        throw error;
+      } );
 
     return pl;
   }
@@ -55,7 +83,7 @@ let qrs = [
   "00020101021226850014BR.GOV.BCB.PIX2563PIX-HOM.HOMOLOGACAO.COM.BR/API/BRCODE/ZSX3020382321603660337879520400005303986540544.225802BR5911IRVING KUHN6008BRASILIA62290525ZSX302038232160366033787963049224"
 ]
 
-async function test() {
+/*async function test() {
   for( let qr of qrs ) {
     let code = PIXQRCode.parseCode( qr );
 
@@ -83,9 +111,9 @@ async function test() {
     console.log();
     break;
   }
-}
+}*/
 
-test();
+//test();
 
 
 //26840014br.gov.bcb.pix2562qrcodepix-h.bb.com.br/pix/766b3e9c-7d5b-4a2c-b912-6f34cb4b0f4c

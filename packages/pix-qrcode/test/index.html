@@ -15,12 +15,13 @@
         <textarea id="qr-string" spellcheck="false"
           style="width: 100%; height: 100px; word-break: break-all; font-family: 'Courier New'; font-size: 16px; font-weight: 800;"
           oninput="decodeCode( this.value.trim() );">
-00020101021226880014br.gov.bcb.pix2566ww4.banrisul.com.br/bqq/api/pix/qrcode/QxgfFfpI8QzfEEedoZJNLf4bor85204752153039865802BR5921Casa das Pipocas Ltda6012Porto Alegre61089400000062070503***63042DA6
+00020101021226740014br.gov.bcb.pix2552pix.nascent.com.br/codes/SquITB5K9eyXFiNN4pD_fkBRtEo5204752153039865802BR5910Sean Wykes6012Porto Alegre61089000000062070503***6304888D
         </textarea>
 
         <div class="buttons">
           <button class="button is-primary" onclick="decodeCode( document.getElementById('qr-string').value.trim() );">Decode</button>
           <button class="button is-secondary" onclick="fixCRC( document.getElementById('qr-string').value.trim() );">CRC</button>
+          <button id="btn-fetch-dynamic" class="button is-secondary" onclick="fetchDynamic( document.getElementById('qr-string').value.trim() );" disabled>Fetch URL</button>
         </div>
 
         <br />
@@ -33,13 +34,17 @@
     </section>
   </body>
   <script type="module">
-    import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError } from "../dist/pix-qrcode.bundle.js";
+    import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError, GUI_PIX } from "/js/pix-qrcode.bundle.js";
+    import { PIXPayloadRetriever } from "/js/pix-payload.bundle.js";
 
     function handleQRError( E ) {
       let result = "ERROR";
 
       if ( E instanceof PIXQRCodeError ) {
         result = PIXQRErrorCode[ E.errorCode ] + " - " + E.message;
+      }
+      else if ( E instanceof Error ) {
+        result = "ERROR - " + E.message;
       }
 
       return result;
@@ -71,11 +76,11 @@
       try {
         let qr = PIXQRCode.parseCode( value );
 
-        $qr.innerText = qr.buildQRString();
+        value = qr.emvQRCode.buildQRString();
 
-        qr.validateCode()
+        $qr.value = value;
 
-        showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
+	decodeCode( value );
       }
       catch( E ) {
         showResult( null, handleQRError( E ) );
@@ -93,6 +98,12 @@
 
           //showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
           showResult( qr.emvQRCode.dumpCode() );
+
+	  let emv = qr.emvQRCode;
+ 
+  	  let $fetch = document.getElementById('btn-fetch-dynamic');
+
+	  $fetch.disabled = !( qr.isPIX('dynamic' ) );
         }
         catch( E ) {
           showResult( null, handleQRError( E ) );
@@ -103,8 +114,37 @@
       }
     }
 
+    function fetchDynamic( value ) {
+      let qr = PIXQRCode.parseCode( value );
+
+      console.log( qr );
+      qr.validateCode();
+
+      let tmpl = qr.emvQRCode.findIdentifiedTemplate( GUI_PIX, 26, 51 )[ 0 ];
+
+    let url = tmpl.getElement(25).content;
+    console.log( url );
+
+    let payload = new PIXPayloadRetriever().fetchPayload( url );
+
+      payload.then( results => {
+	let json = { 
+	   "$hdr": results.header,
+	   ...results.payload
+        };
+
+        showResult( JSON.stringify( json, null, 2 ) );
+      } )
+      .catch( (e) => { 
+        console.log( "Fetch failed: " + e.message );
+      } );
+    
+    }
+
     window.decodeCode = decodeCode;
     window.fixCRC = fixCRC;
+    window.fetchDynamic = fetchDynamic;
+
   </script>
 
 </html>

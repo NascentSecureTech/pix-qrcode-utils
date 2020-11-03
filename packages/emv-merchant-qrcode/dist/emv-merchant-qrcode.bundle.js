@@ -44,14 +44,15 @@ let System, __instantiate;
 
   function gE(exp) {
     return (id, v) => {
-      v = typeof id === "string" ? { [id]: v } : id;
-      for (const [id, value] of Object.entries(v)) {
+      const e = typeof id === "string" ? { [id]: v } : id;
+      for (const [id, value] of Object.entries(e)) {
         Object.defineProperty(exp, id, {
           value,
           writable: true,
           enumerable: true,
         });
       }
+      return v;
     };
   }
 
@@ -350,7 +351,7 @@ System.register("qrcode-node", ["data-utils", "qrcode-validator"], function (exp
                             && element.tag >= first
                             && element.tag <= last
                             && element.hasElement(0)
-                            && element.getElement(0).content == id) {
+                            && element.getElement(0).content.toUpperCase() == id.toUpperCase()) {
                             found.push(element);
                         }
                     });
