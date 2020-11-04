@@ -6,30 +6,39 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
     <title>EMV Merchant QRCode Tool</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" integrity="sha512-pUhApVQtLbnpLtJn6DuzDD5o2xtmLJnJ7oBoMsBnzOkVkpqofGLGPaBJ6ayD2zQe3lCgCibhJBi4cj5wAxwVKA==" crossorigin="anonymous"></script>
+
     <!--script type="module" src="https://nascentsecuretech.github.io/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js"></script-->
   </head>
   <body>
-    <section class="section">
-      <div class="container">
-        <label for="qr-string">QRCode string</label>
-        <textarea id="qr-string" spellcheck="false"
-          style="width: 100%; height: 100px; word-break: break-all; font-family: 'Courier New'; font-size: 16px; font-weight: 800;"
-          oninput="decodeCode( this.value.trim() );">
+    <section class="section container">
+      <div class="columns" style="border:1px solid blue">
+        <div class="column is-9">
+          <label for="qr-string">QRCode</label>
+          <textarea id="qr-string" spellcheck="false"
+            style="width: 100%; height: 126px; word-break: break-all; font-family: 'Courier New'; font-size: 16px; font-weight: 800;"
+            oninput="decodeCode( this.value.trim() );">
 00020101021226740014br.gov.bcb.pix2552pix.nascent.com.br/codes/SquITB5K9eyXFiNN4pD_fkBRtEo5204752153039865802BR5910Sean Wykes6012Porto Alegre61089000000062070503***6304888D
-        </textarea>
-
+          </textarea>
+        </div>
+        <div class="column is-3 has-text-centered">
+          <img id="qr-bitmap" alt="QR-CODE" style="border: 1px solid; height: 200px; min-height: 200px; min-width: 200px; margin-left: auto; margin-right: auto;"></img>
+        </div>
+      </div>
         <div class="buttons">
           <button class="button is-primary" onclick="decodeCode( document.getElementById('qr-string').value.trim() );">Decode</button>
           <button class="button is-secondary" onclick="fixCRC( document.getElementById('qr-string').value.trim() );">CRC</button>
           <button id="btn-fetch-dynamic" class="button is-secondary" onclick="fetchDynamic( document.getElementById('qr-string').value.trim() );" disabled>Fetch URL</button>
         </div>
+        <div class="columns">
+          <div class="column">
 
-        <br />
 
         <label for="decoded">Decoded QR</label>
         <textarea id="decoded"
           style="width: 100%; height: 500px; font-family: 'Courier New'; font-size: 16px; font-weight: 800">
         </textarea>
+      </div>
       </div>
     </section>
   </body>
@@ -87,6 +96,8 @@
       }
     }
 
+    let $qrImage;
+
     function decodeCode( value ) {
       let qr;
 
@@ -104,13 +115,23 @@
   	  let $fetch = document.getElementById('btn-fetch-dynamic');
 
 	  $fetch.disabled = !( qr.isPIX('dynamic' ) );
+
+          $qrImage = document.getElementById('qr-bitmap');
+
+	  new QRious({
+            element: $qrImage,
+            value: value,
+	    size: 200
+        });
         }
         catch( E ) {
           showResult( null, handleQRError( E ) );
+	  if ( $qrImage ) $qrImage.src = '#';
         }
       }
       else {
         showResult();
+	if ( $qrImage ) $qrImage.src = '#';
       }
     }
 
@@ -147,4 +168,7 @@
 
   </script>
 
+  <script>
+	  document.addEventListener('DOMContentLoaded', ()=> { decodeCode( document.getElementById('qr-string').value.trim() ) }, false);
+  </script>
 </html>
