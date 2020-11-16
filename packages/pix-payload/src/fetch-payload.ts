@@ -23,8 +23,9 @@ export class PIXPayloadRetriever {
   }
 
   async fetchPayload( url: string ): Promise<PIXFetchResults | void> {
-    const opts: RequestInit = { 
-      mode: 'no-cors',
+    const opts: RequestInit|any = { 
+      mode: 'cors',
+      Accept: 'text/html,application/text,text/plain,application/jose,*/*',
     };
 
 

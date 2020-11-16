@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
-    <title>EMV Merchant QRCode Tool</title>
+    <title>PIX QRCode Tool</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" integrity="sha512-pUhApVQtLbnpLtJn6DuzDD5o2xtmLJnJ7oBoMsBnzOkVkpqofGLGPaBJ6ayD2zQe3lCgCibhJBi4cj5wAxwVKA==" crossorigin="anonymous"></script>
 
@@ -17,18 +17,17 @@
           <label for="qr-string">QRCode</label>
           <textarea id="qr-string" spellcheck="false"
             style="width: 100%; height: 126px; word-break: break-all; font-family: 'Courier New'; font-size: 16px; font-weight: 800;"
-            oninput="decodeCode( this.value.trim() );">
-00020101021226740014br.gov.bcb.pix2552pix.nascent.com.br/codes/SquITB5K9eyXFiNN4pD_fkBRtEo5204752153039865802BR5910Sean Wykes6012Porto Alegre61089000000062070503***6304888D
-          </textarea>
+	    placeholder="Paste a QR-CODE string here ... "
+            oninput="decodeCode( this.value.trim() );"></textarea>
         </div>
         <div class="column is-3 has-text-centered">
           <img id="qr-bitmap" alt="QR-CODE" style="border: 1px solid; height: 200px; min-height: 200px; min-width: 200px; margin-left: auto; margin-right: auto;"></img>
         </div>
       </div>
         <div class="buttons">
-          <button class="button is-primary" onclick="decodeCode( document.getElementById('qr-string').value.trim() );">Decode</button>
-          <button class="button is-secondary" onclick="fixCRC( document.getElementById('qr-string').value.trim() );">CRC</button>
-          <button id="btn-fetch-dynamic" class="button is-secondary" onclick="fetchDynamic( document.getElementById('qr-string').value.trim() );" disabled>Fetch URL</button>
+          <button class="button is-primary" onclick="decodeCode( document.getElementById('qr-string').value.trim() );" placeholder="Decode PIX QR-CODE">Decode</button>
+          <button class="button is-secondary" onclick="fixCRC( document.getElementById('qr-string').value.trim() );" placeholder="Recalculate CRC">CRC</button>
+          <button id="btn-fetch-dynamic" class="button is-secondary" onclick="fetchDynamic( document.getElementById('qr-string').value.trim() );" disabled placeholder="Fetch and unwrap signed payload">Fetch URL</button>
         </div>
         <div class="columns">
           <div class="column">
@@ -166,6 +165,9 @@
     window.fixCRC = fixCRC;
     window.fetchDynamic = fetchDynamic;
 
+  </script>
+  <script nomodule>
+    alert( 'This browser DOES NOT support modern javascript modules\nTry chrome or firefox');
   </script>
 
   <script>

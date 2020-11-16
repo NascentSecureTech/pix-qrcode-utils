@@ -16,7 +16,7 @@ export function computeCRC( str: string, invert: boolean = false ): string {
 
   let answer = ((crc ^ 0) & 0xFFFF);
 
-  let hex = numToHex( answer );
+  let hex = numToHex( answer, 4 );
 
   if (invert)
       return hex.slice(2) + hex.slice(0, 2);
