@@ -80,14 +80,14 @@
       }
     }
 
-    function decodeCode( value ) {
+    async function decodeCode( value ) {
       let qr;
 
       if ( value.length ) {
         try {
           qr = EMVMerchantQRCode.parseCode( value );
 
-          qr.validateCode()
+          await qr.validateCode()
 
           //showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
           showResult( qr.dumpCode() );

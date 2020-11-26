@@ -1,2 +1,2 @@
-export * from '../../emv-merchant-qrcode/src/emv-merchant-qrcode.ts';
-export * from '../../pix-payload/src/pix-payload.ts';
+export * from '../../emv-merchant-qrcode/src/mod.ts';
+export * from '../../rule-validator/src/rule-validator.ts';

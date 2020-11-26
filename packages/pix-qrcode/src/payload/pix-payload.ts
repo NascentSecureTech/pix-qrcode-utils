@@ -1,10 +1,10 @@
 export * from './fetch-payload.ts';
-import { PIXPayload_v1 } from './pix-payload-v1.ts';
+import { PIXPayload_v2 } from './pix-payload-v2.ts';
 
-export type PIXPayload = PIXPayload_v1;
+export type PIXPayload = PIXPayload_v2;
 
-const ex: PIXPayload_v1 = {
-  $version: "v1",
+const ex: PIXPayload_v2 = {
+  $version: "v2",
   txId: "fc9a4366-ff3d-4964-b5db-c6c91a8722d3",
   revisao: 3,
   calendario: {
@@ -31,27 +31,26 @@ const ex: PIXPayload_v1 = {
 }
 
 export namespace PIXPayload {
-  export function fromJSON_v1( obj: {} ): PIXPayload_v1 {
+  export function fromJSON_v2( obj: {} ): PIXPayload_v2 {
     let payload = {
-      $version: "v1",
+      $version: "v2",
       ...obj
     };
 
     // TODO: Convert
 
-    return payload as PIXPayload_v1;
+    return payload as PIXPayload_v2;
   }
-
 
   export function fromJSON( obj: {}, version: number = 1 ) {
     switch( version ) {
       default:
-      case 1:
-        return fromJSON_v1( obj );
+      case 2:
+        return fromJSON_v2( obj );
     }
   }
 
-  export function validatePayload( _payload: PIXPayload_v1 ) {
+  export function validatePayload( _payload: PIXPayload, options: { isCobV: boolean } = { isCobV: false } ) {
     //
   }
 }

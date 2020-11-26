@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title>PIX QRCode Tool</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" integrity="sha512-pUhApVQtLbnpLtJn6DuzDD5o2xtmLJnJ7oBoMsBnzOkVkpqofGLGPaBJ6ayD2zQe3lCgCibhJBi4cj5wAxwVKA==" crossorigin="anonymous"></script>
@@ -43,7 +43,7 @@
   </body>
   <script type="module">
     import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError, GUI_PIX } from "/js/pix-qrcode.bundle.js";
-    import { PIXPayloadRetriever } from "/js/pix-payload.bundle.js";
+    import { PIXPayloadRetriever } from "/js/pix-qrcode.bundle.js";
 
     function handleQRError( E ) {
       let result = "ERROR";
@@ -88,7 +88,7 @@
 
         $qr.value = value;
 
-	decodeCode( value );
+	      decodeCode( value );
       }
       catch( E ) {
         showResult( null, handleQRError( E ) );
@@ -97,40 +97,40 @@
 
     let $qrImage;
 
-    function decodeCode( value ) {
+    async function decodeCode( value ) {
       let qr;
 
       if ( value.length ) {
         try {
           qr = PIXQRCode.parseCode( value );
 
-          qr.validateCode()
+          await qr.validateCode()
 
           //showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
           showResult( qr.emvQRCode.dumpCode() );
 
-	  let emv = qr.emvQRCode;
- 
-  	  let $fetch = document.getElementById('btn-fetch-dynamic');
+      	  let emv = qr.emvQRCode;
 
-	  $fetch.disabled = !( qr.isPIX('dynamic' ) );
+      	  let $fetch = document.getElementById('btn-fetch-dynamic');
+
+      	  $fetch.disabled = !( qr.isPIX('dynamic' ) );
 
           $qrImage = document.getElementById('qr-bitmap');
 
-	  new QRious({
+      	  new QRious({
             element: $qrImage,
             value: value,
-	    size: 200
-        });
+      	    size: 200
+          });
         }
         catch( E ) {
           showResult( null, handleQRError( E ) );
-	  if ( $qrImage ) $qrImage.src = '#';
+      	  if ( $qrImage ) $qrImage.src = '#';
         }
       }
       else {
         showResult();
-	if ( $qrImage ) $qrImage.src = '#';
+      	if ( $qrImage ) $qrImage.src = '#';
       }
     }
 
@@ -142,23 +142,23 @@
 
       let tmpl = qr.emvQRCode.findIdentifiedTemplate( GUI_PIX, 26, 51 )[ 0 ];
 
-    let url = tmpl.getElement(25).content;
-    console.log( url );
+      let url = tmpl.getElement(25).content;
+      console.log( url );
 
-    let payload = new PIXPayloadRetriever().fetchPayload( url );
+      let payload = new PIXPayloadRetriever().fetchPayload( url );
 
       payload.then( results => {
-	let json = { 
-	   "$hdr": results.header,
-	   ...results.payload
+      	let json = {
+      	   "$hdr": results.header,
+      	   ...results.payload
         };
 
         showResult( JSON.stringify( json, null, 2 ) );
       } )
-      .catch( (e) => { 
+      .catch( (e) => {
         console.log( "Fetch failed: " + e.message );
       } );
-    
+
     }
 
     window.decodeCode = decodeCode;

@@ -1,20 +1,21 @@
 import { QRCodeNode, TAG_CRC } from './qrcode-node.ts';
-import { QRCodeValidator } from './qrcode-validator.ts';
+import { getRuleValidator, ValidationObserver } from './qrcode-validator.ts';
 import { computeCRC } from './crc.ts';
-export { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
-import { QRSchemeElement, rootScheme } from './element-scheme.ts';
+import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
+import { QRSchemaElement, rootScheme } from './element-scheme.ts';
 
 export interface EMVMerchantQRParams {
   encoding?: 'utf8' |'base64';
-  validate?: boolean;
 }
 
 const defaultParams: EMVMerchantQRParams = {
   encoding: 'utf8',
-  validate: false,
 }
 
-function convertCode( qrCode?: string, _encoding?: string ): string {
+function convertCode( qrCode?: string, _encoding?: 'utf8' |'base64' ): string {
+  if ( _encoding && _encoding != 'utf8' )
+    throw new QRCodeError( QRErrorCode.INVALID_PARAM, "encoding must be 'utf8'" );
+
   return qrCode ?? '';
 }
 
@@ -30,7 +31,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
   }
 
   static parseCode( qrCode: string,
-                    params: EMVMerchantQRParams = defaultParams ): EMVMerchantQRCode {
+                    params?: EMVMerchantQRParams ): EMVMerchantQRCode {
 
     params = {
       ...defaultParams,
@@ -60,19 +61,22 @@ export class EMVMerchantQRCode extends QRCodeNode {
     // EL64 = Language stuff
     toContainer( root, false, 64 );
 
+    // EL80-99 =
     toContainer( root, true, 80, 99 );
-
-    if ( params.validate )
-      QRCodeValidator.validateRoot( root );
 
     return root;
   }
 
-  validateCode( ) {
-    QRCodeValidator.validateRoot( this );
+  /*
+   * Validate QR code by EMV Rules
+   */
+  async validateCode( observer?: ValidationObserver ) {
+    return getRuleValidator().validate( this, observer );
   }
 
-
+  /*
+   * Rebuild string from QR Node structure, calculating correct CRC
+   */
   buildQRString(): string {
     let content = this.content;
 
@@ -99,7 +103,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
   }
 
   dumpCode() {
-    function dumpNode( node: QRCodeNode, scheme: QRSchemeElement, indent: string ): string {
+    function dumpNode( node: QRCodeNode, scheme: QRSchemaElement, indent: string ): string {
       let result = "";
 
       if ( node.isType( 'element') ) {
@@ -114,7 +118,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
         }
 
         node.elements.forEach( (element: QRCodeNode ) => {
-          let nodeScheme: QRSchemeElement = scheme?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
+          let nodeScheme: QRSchemaElement = scheme?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
 
           result += dumpNode( element, nodeScheme, indent );
         })

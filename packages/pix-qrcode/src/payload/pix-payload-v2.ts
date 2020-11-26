@@ -1,5 +1,5 @@
-export interface PIXPayload_v1 {
-  $version: "v1";
+export interface PIXPayload_v2 {
+  $version: "v2";
 
   //
   revisao: number;
@@ -14,7 +14,7 @@ export interface PIXPayload_v1 {
     //
     vencimento?: string;
     //
-    recebivelAposVencimento?: boolean;
+    diasAposVencimento?: number;
   }
 
   devedor?: {
@@ -27,7 +27,7 @@ export interface PIXPayload_v1 {
     //
     original?: string;
     //
-    final: string;
+    final?: string;
     //
     juros?: string;
     //
@@ -35,7 +35,7 @@ export interface PIXPayload_v1 {
     //
     desconto?: string;
     //
-    permiteAlteracao?: boolean;
+    abatimento?: string;
   }
 
   //

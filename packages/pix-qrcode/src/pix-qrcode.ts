@@ -1,34 +1,61 @@
-import { EMVMerchantQRCode, EMVMerchantQRParams } from "./deps.ts";
-import { PIXQRErrorCode, PIXQRCodeError } from './pix-qrcode-validator.ts';
-export { PIXQRErrorCode, PIXQRCodeError };
+import { EMVMerchantQRCode, QRCodeNode, EMVMerchantQRParams, ValidationObserver } from "./deps.ts";
+import { getRuleValidator } from './pix-qrcode-validator.ts';
+export { PIXQRCodeError, PIXQRErrorCode } from './pix-qrcode-validator.ts';
+export * from './payload/pix-payload.ts';
 
-const PIX_MAI_DICT = 1;
-const PIX_MAI_URL  = 25
+export const GUI_PIX = 'br.gov.bcb.pix';
 
-export interface PIXQRCodeParams extends EMVMerchantQRParams {
+export const PIX_MAI_DICT = 1;
+export const PIX_MAI_URL  = 25
+
+export interface PIXDynamicQRCodeParams extends EMVMerchantQRParams {
+  type: "dynamic";
+
+  url?: string;
 }
 
-const defaultParams: PIXQRCodeParams = {
+export interface PIXStaticQRCodeParams extends EMVMerchantQRParams {
+  type: "static";
+
+  chave?: string;
+
+  value?: string;
+  name?: string;
+  countryCode?: string;
+  postalCode?: string;
+  txid?: string;
+}
+
+export type PIXQRCodeParams = PIXStaticQRCodeParams | PIXDynamicQRCodeParams;
+
+const defaultParams: EMVMerchantQRParams = {
   encoding: 'utf8',
-  validate: false,
 }
-
-export let GUI_PIX = 'br.gov.bcb.pix';
 
 export class PIXQRCode {
   protected _emvQRCode: EMVMerchantQRCode;
 
   get emvQRCode() { return this._emvQRCode }
 
+  getMAI( ): QRCodeNode {
+    let maiList = this.emvQRCode.findIdentifiedTemplate( GUI_PIX, 26, 51 );
+
+    return  maiList[ 0 ];
+  }
+
   protected constructor(
     qrCode: string,
-    params: PIXQRCodeParams = defaultParams ) {
+    params?: EMVMerchantQRParams ) {
 
     this._emvQRCode = EMVMerchantQRCode.parseCode( qrCode, params );
   }
 
+  static createCode( ): PIXQRCodeParams {
+    return { type: "static" };
+  }
+
   static parseCode( qrCode: string,
-                    params: PIXQRCodeParams = defaultParams ): PIXQRCode {
+                    params?: EMVMerchantQRParams ): PIXQRCode {
 
     params = {
       ...defaultParams,
@@ -37,45 +64,11 @@ export class PIXQRCode {
 
     let pixQRCode = new PIXQRCode( qrCode, params );
 
-    if ( params.validate )
-      pixQRCode.validateCode();
-
     return pixQRCode;
   }
 
-  public validateCode() {
-    let emv = this.emvQRCode;
-
-    // 1. EMV QR Code must be OK
-    emv.validateCode();
-
-    // 2. Must have (single) MAI with PIX GUI
-    let maiList = emv.findIdentifiedTemplate( GUI_PIX, 26, 51 );
-    if ( maiList.length == 0 ) {
-      throw new PIXQRCodeError( PIXQRErrorCode.MISSING_PIX_MAI, "PIX MAI not found")
-    }
-
-    if ( maiList.length > 1 ) {
-      throw new PIXQRCodeError( PIXQRErrorCode.DUPLICATE_PIX_MAI, "PIX MAI duplicated")
-    }
-
-    let pixMAI = maiList[ 0 ];
-
-    // 3. PIX-MAI contents must indicate DICT or URL
-    let pixStatic = pixMAI.hasElement( PIX_MAI_DICT ); // DICT KEY
-
-    if( pixStatic ) {
-      if ( pixMAI.hasElement( PIX_MAI_URL ) ) {
-        throw new PIXQRCodeError( PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains both DICT and URL elements")
-      }
-    }
-    else { // must be dynamic
-      if ( !pixMAI.hasElement( PIX_MAI_URL ) ) {
-        throw new PIXQRCodeError( PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements")
-      }
-    }
-
-    //
+  public async validateCode( observer?: ValidationObserver ) {
+    await getRuleValidator( ).validate( this, observer );
   }
 
   isPIX( test: "pix"|"valid"|"static"|"dynamic"): boolean {

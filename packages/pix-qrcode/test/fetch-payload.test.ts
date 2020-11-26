@@ -1,75 +1,14 @@
-import { PIXPayload } from './pix-payload.ts';
-import * as base64 from "https://deno.land/x/base64/mod.ts";
-import { PIXQRCode, GUI_PIX } from '../../pix-qrcode/src/pix-qrcode.ts';
+import {PIXPayloadRetriever} from '../src/mod.ts';
 
-//let url = "apidev.banrisul.com.br/pix/qrcode/R4upP-FJICfcIcsouWXSyar1F0Q";
+let url = "api-pix.bancobs2.com.br/spi/v2/28028081-7c87-48fe-94f5-7e6d3096ded0";
 
-export interface PIXFetchResults {
-  jwsString: string;
+url="pix.nascent.com.br/codes/k7nXuhpOMeHbkbNw6UUEoXwdkdM";
+let payload = new PIXPayloadRetriever().fetchPayload( url );
 
-  jws: {
-    hdr: Uint8Array;
-    payload: Uint8Array;
-    signature: Uint8Array;
-  };
+let json = await payload;
 
-  header: any;
-  payload: PIXPayload;
-}
+console.log( json.payload );
 
-export class PIXPayloadRetriever {
-  constructor( ) {
-
-  }
-
-  async fetchPayload( url: string ): Promise<PIXFetchResults | void> {
-    const opts: RequestInit|any = { 
-      mode: 'cors',
-      Accept: 'text/html,application/text,text/plain,application/jose,*/*',
-    };
-
-
-    /**
-     * Output: JSON Data
-     */
-    let pl = await fetch( "https://" + url, opts )
-      .then( (response) => {
-      //  console.log("Response", response);
-        if ( !response.ok )
-          throw new Error( "HTTP " + response.status)
-
-        return response.text();
-      })
-      .then( (jws:string ) => {
-        let parts = jws.split('.')
-          .map( (b64) => base64.toUint8Array( b64 ) );
-
-        let jsons = parts.map( (u8) => new TextDecoder().decode( u8 ) );
-
-        let pixFetch: PIXFetchResults = {
-          jwsString: jws,
-
-          jws: { 
-             hdr: parts[0], 
-             payload: parts[1],
-             signature: parts[2]
-          },
-
-          header: JSON.parse( jsons[0] ),
-
-          payload: ( JSON.parse( jsons[1] ) as any) as PIXPayload
-        };
-
-        return pixFetch;;
-      })
-      .catch( (error) => {
-        console.log(error);
-        throw error;
-      } );
-
-    return pl;
-  }
-}
 
 //new PIXPayloadRetriever().fetchPayload( url );
 

@@ -1,30 +1,17 @@
-interface DataScheme {
-  name: string;
+import { DataSchemaElement } from './deps.ts';
 
-  type?: 'string'|'integer'|'boolean';
-
-  pattern?: string;
-
-  // if type=='string'
-  minLength?: number;
-  maxLength?: number;
-}
-
-export interface QRSchemeElement extends DataScheme {
+export interface QRSchemaElement extends DataSchemaElement {
   lastTag?: number;
 
-  optional?: boolean;
-
-  pattern?: string;
-
-  elementMap?: QRElementSchemeMap;
+  elementMap?: QRElementSchemaMap;
 }
 
-export type QRElementSchemeMap = Record<number, QRSchemeElement>;
+export type QRElementSchemaMap = Record<number, QRSchemaElement>;
 
 const paymentSystemSpecificTemplateMap = {
   0: {
     name: 'Globally Unique Identifier',
+    length: { max: 32 },
     optional: true,
   },
   1: {
@@ -37,6 +24,7 @@ const paymentSystemSpecificTemplateMap = {
 const reservedTemplateMap = {
   0: {
     name: 'Globally Unique Identifier',
+    length: { max: 32 },
     optional: true,
   },
   1: {
@@ -46,41 +34,50 @@ const reservedTemplateMap = {
   },
 }
 
-const additionalDataFieldMap: QRElementSchemeMap = {
+const additionalDataFieldMap: QRElementSchemaMap = {
   1: {
     name: 'Bill Number',
+    length: { max: 25 },
     optional: true,
   },
   2: {
     name: 'Mobile Number',
+    length: { max: 25 },
     optional: true,
   },
   3: {
     name: 'Store Label',
+    length: { max: 25 },
     optional: true,
   },
   4: {
     name: 'Loyalty Number',
+    length: { max: 25 },
     optional: true,
   },
   5: {
     name: 'Reference Label',
+    length: { max: 25 },
     optional: true,
   },
   6: {
     name: 'Customer Label',
+    length: { max: 25 },
     optional: true,
   },
   7: {
     name: 'Terminal Label',
+    length: { max: 25 },
     optional: true,
   },
   8: {
     name: 'Purpose of Transaction',
+    length: { max: 25 },
     optional: true,
   },
   9: {
     name: 'Additional Consumer Data Request',
+    length: { max: 25 },
     optional: true,
   },
   10: {
@@ -111,19 +108,22 @@ const merchantInformationLanguageTemplateMap = {
   },
 }
 
-const rootSchemeMap: QRElementSchemeMap = {
+const rootSchemeMap: QRElementSchemaMap = {
   0: {
     name: 'Payload Format Indicator',
-    pattern: '^01$'
+    length: 2,
+    pattern: /^01$/
   },
   1: {
     name: 'Point of Initiation Method',
     optional: true,
-    pattern: '^1[12]\d\d$'
+    length: 2,
+    pattern: /^1[12]$/
   },
   2: {
     lastTag: 25,
     name: 'Merchant Account Information',
+    length: { max: 99 }
   },
   26: {
     lastTag: 51,
@@ -132,20 +132,28 @@ const rootSchemeMap: QRElementSchemeMap = {
   },
   52: {
     name: 'Merchant Category Code',
+    length: 4,
+    pattern: /^\d*$/
   },
   53: {
     name: 'Transaction Currency',
+    length: 3,
+    pattern: /^\d*$/,
   },
   54: {
     name: 'Transaction Amount',
-//    presence: 'C',
+    length: { max: 13 },
+    pattern: /^[\d]+(.\d\d)?$/
   },
   55: {
     name: 'Tip or Convenience Indicator',
+    length: 2,
     optional: true,
   },
   56: {
     name: 'Value of Convenience Fee Fixed',
+    length: { max: 13 },
+    pattern: /^[\d]+(.\d\d)?$/
 //    presence: 'C',
   },
   57: {
@@ -154,10 +162,11 @@ const rootSchemeMap: QRElementSchemeMap = {
   },
   58: {
     name: 'Country Code',
-    minLength: 2, maxLength: 2,
+    length: 2
   },
   59: {
     name: 'Merchant Name',
+    length: { max: 25 }
   },
   60: {
     name: 'Merchant City',
@@ -173,6 +182,7 @@ const rootSchemeMap: QRElementSchemeMap = {
   },
   63: {
     name: 'CRC',
+    pattern: /^[A-Fa-f\d]*$/
   },
   64: {
     name: 'Merchant Information — Language Template',
