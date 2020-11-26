@@ -1,4 +1,4 @@
-import { numToHex } from './data-utils.ts';
+import { numToHex } from './deps.ts';
 
 export function computeCRC( str: string, invert: boolean = false ): string {
   const bytes = new TextEncoder().encode(str);

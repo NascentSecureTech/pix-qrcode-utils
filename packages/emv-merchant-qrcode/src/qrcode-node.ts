@@ -1,4 +1,4 @@
-import { valueIn } from './data-utils.ts';
+import { valueIn } from './deps.ts';
 import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
 
 export const TAG_INIT = 0;

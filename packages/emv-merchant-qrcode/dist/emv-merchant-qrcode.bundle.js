@@ -1,104 +1,3 @@
-class ValidationError extends Error {
-    errorName = "";
-    constructor(errorCode, message){
-        super(message);
-        this.errorCode = errorCode;
-    }
-}
-class RuleValidator {
-    childValidators = [];
-    constructor(ruleInfo){
-        this.ruleInfo = ruleInfo;
-    }
-    static get(info) {
-        let v = new RuleValidator(info);
-        return v;
-    }
-    addRule(info) {
-        return this.addValidator(RuleValidator.get(info));
-    }
-    addValidator(rule) {
-        rule.parent = this;
-        this.childValidators.push(rule);
-        return this;
-    }
-    result = {
-        status: "none"
-    };
-    handleResult(res, observer, isFinal = false) {
-        const previousStatus = this.result.status;
-        switch(res.status){
-            case "none":
-            case "not-applicable":
-            case "running":
-                this.result = res;
-                break;
-            case "pass":
-                if (isFinal && this.result.status == "running") {
-                    this.result = res;
-                }
-                break;
-            case "inconclusive":
-                if (this.result.status != "fail") {
-                    this.result = res;
-                }
-                break;
-            case "fail":
-                if (this.result.status != "fail") {
-                    this.result = res;
-                }
-                break;
-        }
-        if (observer && previousStatus != this.result.status) observer(this, this.result);
-        return this.result;
-    }
-    async executeRule(context) {
-        let result = {
-            status: "pass"
-        };
-        if (this.ruleInfo.rule) {
-            try {
-                let res = this.ruleInfo.rule(context, this);
-                if (res != undefined) {
-                    result = res instanceof Promise ? await Promise.resolve(res) : res;
-                }
-            } catch (E) {
-                result = {
-                    status: "fail",
-                    error: E instanceof ValidationError ? E : new ValidationError(E)
-                };
-            }
-        }
-        return result;
-    }
-    async validate(context, observer) {
-        this.result = {
-            status: "none"
-        };
-        let shouldExec = !this.ruleInfo.when || this.ruleInfo.when(context, this);
-        if (shouldExec) {
-            this.handleResult({
-                status: "running"
-            }, observer);
-            if (this.ruleInfo.rule) {
-                this.handleResult(await this.executeRule(context), observer);
-            }
-            for (let child of this.childValidators){
-                if (this.result.status != "running") break;
-                let childResult = await child.validate(context, observer);
-                this.handleResult(childResult, observer);
-            }
-            if (this.result.status == "running") this.handleResult({
-                status: "pass"
-            }, observer, true);
-        } else {
-            this.handleResult({
-                status: "not-applicable"
-            }, observer, true);
-        }
-        return this.result;
-    }
-}
 const paymentSystemSpecificTemplateMap = {
     0: {
         name: 'Globally Unique Identifier',
@@ -320,74 +219,6 @@ const rootScheme = {
     name: 'root',
     elementMap: rootSchemeMap
 };
-var QRErrorCode;
-(function(QRErrorCode1) {
-    QRErrorCode1[QRErrorCode1["INVALID_PARAM"] = 0] = "INVALID_PARAM";
-    QRErrorCode1[QRErrorCode1["INVALID_QRCODE"] = 1] = "INVALID_QRCODE";
-    QRErrorCode1[QRErrorCode1["CRC_MISMATCH"] = 2] = "CRC_MISMATCH";
-    QRErrorCode1[QRErrorCode1["MISSING_MANDATORY_ELEMENT"] = 3] = "MISSING_MANDATORY_ELEMENT";
-    QRErrorCode1[QRErrorCode1["INVALID_ELEMENT"] = 4] = "INVALID_ELEMENT";
-})(QRErrorCode || (QRErrorCode = {
-}));
-class QRCodeError extends ValidationError {
-    constructor(errorCode1, message1){
-        super(errorCode1, message1);
-        this.errorCode = errorCode1;
-        this.errorName = "EMVQR-" + QRErrorCode[errorCode1];
-    }
-}
-const mandatoryElements = [
-    0,
-    52,
-    53,
-    58,
-    59,
-    60,
-    63
-];
-function validateElement(val, schema, path) {
-    if (val == undefined) {
-        if (!schema.optional) {
-            throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, `Element ${path} missing and is mandatory`);
-        }
-        return;
-    }
-    if (schema.length != undefined) {
-        if (schema.length instanceof Object) {
-            let lenInfo = schema.length;
-            if (lenInfo.max && val.length > lenInfo.max) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} must have maximum length of ${lenInfo.max}`);
-            if (lenInfo.min && val.length < lenInfo.min) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} must have minimum length of ${lenInfo.min}`);
-        } else {
-            if (val.length != schema.length) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} must have length of ${schema.length}`);
-        }
-    }
-    if (schema.pattern != undefined) {
-        let pattern = schema.pattern instanceof RegExp ? schema.pattern : new RegExp(schema.pattern);
-        if (!pattern.test(val)) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} has invalid contents`);
-    }
-}
-function validateNode(node, schema, path = "") {
-    if (node.isType('element')) {
-        validateElement(node.content, schema, path);
-    } else {
-        node.elements.forEach((element)=>{
-            let nodeScheme = schema?.elementMap?.[element.tag] ?? {
-                name: 'unknown',
-                elementMap: {
-                }
-            };
-            let elementPath = path + (path.length ? ":" : "") + ("00" + element.tag).slice(-2);
-            validateNode(element, nodeScheme, elementPath);
-        });
-    }
-}
-const defaultParams = {
-    encoding: 'utf8'
-};
-function convertCode(qrCode, _encoding) {
-    if (_encoding && _encoding != 'utf8') throw new QRCodeError(QRErrorCode.INVALID_PARAM, "encoding must be 'utf8'");
-    return qrCode ?? '';
-}
 function numToHex(n, digits) {
     let hex = n.toString(16).toUpperCase();
     if (digits) {
@@ -398,6 +229,128 @@ function numToHex(n, digits) {
 function valueIn(setof, value) {
     return setof.indexOf(value) >= 0;
 }
+class ValidationError extends Error {
+    errorName = "";
+    constructor(errorCode, message){
+        super(message);
+        this.errorCode = errorCode;
+    }
+}
+class RuleValidator {
+    childValidators = [];
+    constructor(ruleInfo){
+        this.ruleInfo = ruleInfo;
+    }
+    static get(info) {
+        let v = new RuleValidator(info);
+        return v;
+    }
+    addRule(info) {
+        return this.addValidator(RuleValidator.get(info));
+    }
+    addValidator(rule) {
+        rule.parent = this;
+        this.childValidators.push(rule);
+        return this;
+    }
+    result = {
+        status: "none"
+    };
+    handleResult(res, observer, isFinal = false) {
+        const previousStatus = this.result.status;
+        switch(res.status){
+            case "none":
+            case "not-applicable":
+            case "running":
+                this.result = res;
+                break;
+            case "pass":
+                if (isFinal && this.result.status == "running") {
+                    this.result = res;
+                }
+                break;
+            case "inconclusive":
+                if (this.result.status != "fail") {
+                    this.result = res;
+                }
+                break;
+            case "fail":
+                if (this.result.status != "fail") {
+                    this.result = res;
+                }
+                break;
+        }
+        if (observer && previousStatus != this.result.status) observer(this, this.result);
+        return this.result;
+    }
+    async executeRule(context) {
+        let result = {
+            status: "pass"
+        };
+        if (this.ruleInfo.rule) {
+            try {
+                let res = this.ruleInfo.rule(context, this);
+                if (res != undefined) {
+                    result = res instanceof Promise ? await Promise.resolve(res) : res;
+                }
+            } catch (E) {
+                result = {
+                    status: "fail",
+                    error: E instanceof ValidationError ? E : new ValidationError(E)
+                };
+            }
+        }
+        return result;
+    }
+    async validate(context, observer) {
+        this.result = {
+            status: "none"
+        };
+        let shouldExec = !this.ruleInfo.when || this.ruleInfo.when(context, this);
+        if (shouldExec) {
+            this.handleResult({
+                status: "running"
+            }, observer);
+            if (this.ruleInfo.rule) {
+                this.handleResult(await this.executeRule(context), observer);
+            }
+            for (let child of this.childValidators){
+                if (this.result.status != "running") break;
+                let childResult = await child.validate(context, observer);
+                this.handleResult(childResult, observer);
+            }
+            if (this.result.status == "running") this.handleResult({
+                status: "pass"
+            }, observer, true);
+        } else {
+            this.handleResult({
+                status: "not-applicable"
+            }, observer, true);
+        }
+        return this.result;
+    }
+}
+var QRErrorCode;
+(function(QRErrorCode1) {
+    QRErrorCode1[QRErrorCode1["INVALID_PARAM"] = 0] = "INVALID_PARAM";
+    QRErrorCode1[QRErrorCode1["INVALID_QRCODE"] = 1] = "INVALID_QRCODE";
+    QRErrorCode1[QRErrorCode1["CRC_MISMATCH"] = 2] = "CRC_MISMATCH";
+    QRErrorCode1[QRErrorCode1["MISSING_MANDATORY_ELEMENT"] = 3] = "MISSING_MANDATORY_ELEMENT";
+    QRErrorCode1[QRErrorCode1["INVALID_ELEMENT"] = 4] = "INVALID_ELEMENT";
+})(QRErrorCode || (QRErrorCode = {
+}));
+const mandatoryElements = [
+    0,
+    52,
+    53,
+    58,
+    59,
+    60,
+    63
+];
+const defaultParams = {
+    encoding: 'utf8'
+};
 function computeCRC(str, invert = false) {
     const bytes = new TextEncoder().encode(str);
     const crcTable = [
@@ -669,6 +622,49 @@ function computeCRC(str, invert = false) {
     if (invert) return hex.slice(2) + hex.slice(0, 2);
     return hex;
 }
+class QRCodeError extends ValidationError {
+    constructor(errorCode1, message1){
+        super(errorCode1, message1);
+        this.errorCode = errorCode1;
+        this.errorName = "EMVQR-" + QRErrorCode[errorCode1];
+    }
+}
+function validateElement(val, schema, path) {
+    if (val == undefined) {
+        if (!schema.optional) {
+            throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, `Element ${path} missing and is mandatory`);
+        }
+        return;
+    }
+    if (schema.length != undefined) {
+        if (schema.length instanceof Object) {
+            let lenInfo = schema.length;
+            if (lenInfo.max && val.length > lenInfo.max) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} must have maximum length of ${lenInfo.max}`);
+            if (lenInfo.min && val.length < lenInfo.min) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} must have minimum length of ${lenInfo.min}`);
+        } else {
+            if (val.length != schema.length) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} must have length of ${schema.length}`);
+        }
+    }
+    if (schema.pattern != undefined) {
+        let pattern = schema.pattern instanceof RegExp ? schema.pattern : new RegExp(schema.pattern);
+        if (!pattern.test(val)) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} has invalid contents`);
+    }
+}
+function validateNode(node, schema, path = "") {
+    if (node.isType('element')) {
+        validateElement(node.content, schema, path);
+    } else {
+        node.elements.forEach((element)=>{
+            let nodeScheme = schema?.elementMap?.[element.tag] ?? {
+                name: 'unknown',
+                elementMap: {
+                }
+            };
+            let elementPath = path + (path.length ? ":" : "") + ("00" + element.tag).slice(-2);
+            validateNode(element, nodeScheme, elementPath);
+        });
+    }
+}
 function getRuleValidator() {
     return RuleValidator.get({
         id: "EMVQR"
@@ -851,6 +847,10 @@ class QRCodeNode {
         });
         return found;
     }
+}
+function convertCode(qrCode, _encoding) {
+    if (_encoding && _encoding != 'utf8') throw new QRCodeError(QRErrorCode.INVALID_PARAM, "encoding must be 'utf8'");
+    return qrCode ?? '';
 }
 export class EMVMerchantQRCode extends QRCodeNode {
     type = "root";
