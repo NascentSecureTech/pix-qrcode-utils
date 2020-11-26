@@ -4,7 +4,7 @@
   "main": "dist/emv-merchant-qrcode.bundle.js",
 
   "scripts": {
-    "bundle": "deno bundle src/emv-merchant-qrcode.ts dist/emv-merchant-qrcode.bundle.js"
+    "bundle": "deno bundle src/mod.ts dist/emv-merchant-qrcode.bundle.js"
   },
 
   "devDependencies": {

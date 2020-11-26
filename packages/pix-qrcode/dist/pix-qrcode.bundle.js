@@ -1,3 +1,10 @@
+const GUI_PIX = 'br.gov.bcb.pix';
+const defaultParams = {
+    encoding: 'utf8'
+};
+const GUI_PIX1 = GUI_PIX;
+const PIX_MAI_DICT = 1;
+const PIX_MAI_URL = 25;
 function numToHex(n, digits) {
     let hex = n.toString(16).toUpperCase();
     if (digits) {
@@ -348,9 +355,87 @@ const rootScheme = {
     name: 'root',
     elementMap: rootSchemeMap
 };
-const defaultParams = {
+const defaultParams1 = {
     encoding: 'utf8'
 };
+var PIXQRErrorCode;
+(function(PIXQRErrorCode1) {
+    PIXQRErrorCode1[PIXQRErrorCode1["OK"] = 0] = "OK";
+    PIXQRErrorCode1[PIXQRErrorCode1["INVALID_QRCODE"] = 1] = "INVALID_QRCODE";
+    PIXQRErrorCode1[PIXQRErrorCode1["CRC_MISMATCH"] = 2] = "CRC_MISMATCH";
+    PIXQRErrorCode1[PIXQRErrorCode1["MISSING_MANDATORY_ELEMENT"] = 3] = "MISSING_MANDATORY_ELEMENT";
+    PIXQRErrorCode1[PIXQRErrorCode1["MISSING_PIX_MAI"] = 4] = "MISSING_PIX_MAI";
+    PIXQRErrorCode1[PIXQRErrorCode1["PIX_MAI_INVALID"] = 5] = "PIX_MAI_INVALID";
+    PIXQRErrorCode1[PIXQRErrorCode1["DUPLICATE_PIX_MAI"] = 6] = "DUPLICATE_PIX_MAI";
+})(PIXQRErrorCode || (PIXQRErrorCode = {
+}));
+class PIXQRCodeError extends ValidationError {
+    constructor(errorCode1, message1){
+        super(errorCode1, message1);
+        this.errorCode = errorCode1;
+        this.errorName = "PIXQR-" + PIXQRErrorCode[errorCode1];
+    }
+}
+function addStaticRules(v) {
+    v.addRule({
+        id: "pix-static-txid",
+        when: (pix)=>pix.isPIX("static")
+        ,
+        description: "Contains a PIX Merchant Account Information",
+        rule: (_pix)=>{
+        }
+    });
+}
+function addDynamicRules(v) {
+    v.addRule({
+        id: "pix-dynamic-txid",
+        when: (pix)=>pix.isPIX("dynamic")
+        ,
+        description: "Correct URL coded in dynamic PIX",
+        rule: (pix)=>{
+            const url = pix.getMAI().getElement(25);
+            if (url && url.content.startsWith("http")) throw new PIXQRCodeError(PIXQRErrorCode.PIX_MAI_INVALID, "URL must not contain protocol (https://)");
+        }
+    });
+}
+function getRuleValidator() {
+    let v = RuleValidator.get({
+        id: "PIXQR"
+    }).addRule({
+        id: "pix-mai",
+        description: "Contains a PIX Merchant Account Information",
+        rule: (pix)=>{
+            let maiList = pix.emvQRCode.findIdentifiedTemplate(GUI_PIX, 26, 51);
+            if (maiList.length == 0) {
+                throw new PIXQRCodeError(PIXQRErrorCode.MISSING_PIX_MAI, "PIX MAI not found");
+            }
+            if (maiList.length > 1) {
+                throw new PIXQRCodeError(PIXQRErrorCode.DUPLICATE_PIX_MAI, "PIX MAI duplicated");
+            }
+        }
+    }).addRule({
+        id: "pix-static-or-dynamic",
+        description: "Contains a PIX Merchant Account Information",
+        rule: (pix)=>{
+            let pixMAI = pix.emvQRCode.findIdentifiedTemplate(GUI_PIX, 26, 51)[0];
+            let pixStatic = pixMAI.hasElement(1);
+            if (pixStatic) {
+                if (pixMAI.hasElement(25)) {
+                    throw new PIXQRCodeError(PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains both DICT and URL elements");
+                }
+            } else {
+                if (!pixMAI.hasElement(25)) {
+                    throw new PIXQRCodeError(PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements");
+                }
+            }
+        }
+    });
+    addStaticRules(v);
+    addDynamicRules(v);
+    return v;
+}
+const PIXQRCodeError1 = PIXQRCodeError;
+const PIXQRErrorCode1 = PIXQRErrorCode;
 function getLengths(b64) {
     const len = b64.length;
     let validLen = b64.indexOf("=");
@@ -440,7 +525,7 @@ for(let i = 0, l = code.length; i < l; ++i){
 revLookup["-".charCodeAt(0)] = 62;
 revLookup["_".charCodeAt(0)] = 63;
 const { byteLength , toUint8Array , fromUint8Array  } = init(lookup, revLookup);
-class PIXPayloadRetriever {
+export class PIXPayloadRetriever {
     constructor(){
     }
     async fetchPayload(url) {
@@ -475,92 +560,6 @@ class PIXPayloadRetriever {
         return pl;
     }
 }
-const GUI_PIX = 'br.gov.bcb.pix';
-const defaultParams1 = {
-    encoding: 'utf8'
-};
-const PIXPayloadRetriever1 = PIXPayloadRetriever;
-const GUI_PIX1 = GUI_PIX;
-const PIX_MAI_DICT = 1;
-const PIX_MAI_URL = 25;
-var PIXQRErrorCode;
-(function(PIXQRErrorCode1) {
-    PIXQRErrorCode1[PIXQRErrorCode1["OK"] = 0] = "OK";
-    PIXQRErrorCode1[PIXQRErrorCode1["INVALID_QRCODE"] = 1] = "INVALID_QRCODE";
-    PIXQRErrorCode1[PIXQRErrorCode1["CRC_MISMATCH"] = 2] = "CRC_MISMATCH";
-    PIXQRErrorCode1[PIXQRErrorCode1["MISSING_MANDATORY_ELEMENT"] = 3] = "MISSING_MANDATORY_ELEMENT";
-    PIXQRErrorCode1[PIXQRErrorCode1["MISSING_PIX_MAI"] = 4] = "MISSING_PIX_MAI";
-    PIXQRErrorCode1[PIXQRErrorCode1["PIX_MAI_INVALID"] = 5] = "PIX_MAI_INVALID";
-    PIXQRErrorCode1[PIXQRErrorCode1["DUPLICATE_PIX_MAI"] = 6] = "DUPLICATE_PIX_MAI";
-})(PIXQRErrorCode || (PIXQRErrorCode = {
-}));
-class PIXQRCodeError extends ValidationError {
-    constructor(errorCode1, message1){
-        super(errorCode1, message1);
-        this.errorCode = errorCode1;
-        this.errorName = "PIXQR-" + PIXQRErrorCode[errorCode1];
-    }
-}
-function addStaticRules(v) {
-    v.addRule({
-        id: "pix-static-txid",
-        when: (pix)=>pix.isPIX("static")
-        ,
-        description: "Contains a PIX Merchant Account Information",
-        rule: (_pix)=>{
-        }
-    });
-}
-function addDynamicRules(v) {
-    v.addRule({
-        id: "pix-dynamic-txid",
-        when: (pix)=>pix.isPIX("dynamic")
-        ,
-        description: "Correct URL coded in dynamic PIX",
-        rule: (pix)=>{
-            const url = pix.getMAI().getElement(25);
-            if (url && url.content.startsWith("http")) throw new PIXQRCodeError(PIXQRErrorCode.PIX_MAI_INVALID, "URL must not contain protocol (https://)");
-        }
-    });
-}
-function getRuleValidator() {
-    let v = RuleValidator.get({
-        id: "PIXQR"
-    }).addRule({
-        id: "pix-mai",
-        description: "Contains a PIX Merchant Account Information",
-        rule: (pix)=>{
-            let maiList = pix.emvQRCode.findIdentifiedTemplate(GUI_PIX, 26, 51);
-            if (maiList.length == 0) {
-                throw new PIXQRCodeError(PIXQRErrorCode.MISSING_PIX_MAI, "PIX MAI not found");
-            }
-            if (maiList.length > 1) {
-                throw new PIXQRCodeError(PIXQRErrorCode.DUPLICATE_PIX_MAI, "PIX MAI duplicated");
-            }
-        }
-    }).addRule({
-        id: "pix-static-or-dynamic",
-        description: "Contains a PIX Merchant Account Information",
-        rule: (pix)=>{
-            let pixMAI = pix.emvQRCode.findIdentifiedTemplate(GUI_PIX, 26, 51)[0];
-            let pixStatic = pixMAI.hasElement(1);
-            if (pixStatic) {
-                if (pixMAI.hasElement(25)) {
-                    throw new PIXQRCodeError(PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains both DICT and URL elements");
-                }
-            } else {
-                if (!pixMAI.hasElement(25)) {
-                    throw new PIXQRCodeError(PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements");
-                }
-            }
-        }
-    });
-    addStaticRules(v);
-    addDynamicRules(v);
-    return v;
-}
-const PIXQRCodeError1 = PIXQRCodeError;
-const PIXQRErrorCode1 = PIXQRErrorCode;
 class QRCodeError extends ValidationError {
     constructor(errorCode2, message2){
         super(errorCode2, message2);
@@ -1064,12 +1063,12 @@ function convertCode(qrCode, _encoding) {
 }
 class EMVMerchantQRCode extends QRCodeNode {
     type = "root";
-    constructor(qrCode1, params1 = defaultParams){
+    constructor(qrCode1, params1 = defaultParams1){
         super('root', convertCode(qrCode1, params1.encoding));
     }
     static parseCode(qrCode, params) {
         params = {
-            ...defaultParams,
+            ...defaultParams1,
             ...params
         };
         let root = new EMVMerchantQRCode(qrCode, params);
@@ -1144,7 +1143,7 @@ class PIXQRCode {
     }
     static parseCode(qrCode, params) {
         params = {
-            ...defaultParams1,
+            ...defaultParams,
             ...params
         };
         let pixQRCode = new PIXQRCode(qrCode, params);
@@ -1173,4 +1172,4 @@ class PIXQRCode {
     }
 }
 const PIXQRCode1 = PIXQRCode;
-export { PIXQRCodeError1 as PIXQRCodeError, PIXQRErrorCode1 as PIXQRErrorCode, PIXPayloadRetriever1 as PIXPayloadRetriever, GUI_PIX1 as GUI_PIX, PIX_MAI_DICT, PIX_MAI_URL, PIXQRCode1 as PIXQRCode };
+export { PIXQRCodeError1 as PIXQRCodeError, PIXQRErrorCode1 as PIXQRErrorCode, GUI_PIX1 as GUI_PIX, PIX_MAI_DICT, PIX_MAI_URL, PIXQRCode1 as PIXQRCode };

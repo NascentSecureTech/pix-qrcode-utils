@@ -4,7 +4,7 @@
   "main": "dist/pix-qrcode.bundle.js",
 
   "scripts": {
-    "bundle": "deno bundle src/pix-qrcode.ts dist/pix-qrcode.bundle.js"
+    "bundle": "deno bundle src/mod.ts dist/pix-qrcode.bundle.js"
   },
 
   "devDependencies": {
