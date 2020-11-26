@@ -4,13 +4,13 @@ import { computeCRC } from './crc.ts';
 import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
 import { QRSchemaElement, rootScheme } from './element-scheme.ts';
 
-export namespace EMVQR {
-  export const MAI_TEMPLATE_FIRST = 26
-  export const MAI_TEMPLATE_LAST = 51
+export class EMVQR {
+  static MAI_TEMPLATE_FIRST = 26
+  static MAI_TEMPLATE_LAST = 51
 
-  export const TAG_TEMPLATE_GUI = 0;
-  export const TAG_ADDITIONAL_DATA = 62;
-  export const TAG_AD_REF_LABEL = 5;
+  static TAG_TEMPLATE_GUI = 0;
+  static TAG_ADDITIONAL_DATA = 62;
+  static TAG_AD_REF_LABEL = 5;
 }
 
 export interface EMVMerchantQRParams {

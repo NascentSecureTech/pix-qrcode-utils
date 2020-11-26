@@ -4,12 +4,12 @@ import { getRuleValidator } from './pix-qrcode-validator.ts';
 export { PIXQRCodeError, PIXQRErrorCode } from './pix-qrcode-validator.ts';
 export * from './payload/pix-payload.ts';
 
-export namespace PIX {
-  export const GUI = 'br.gov.bcb.pix';
+export class PIX {
+  static GUI = 'br.gov.bcb.pix';
 
-  export const TAG_MAI_CHAVE = 1;
-  export const TAG_MAI_INFOS = 2;
-  export const TAG_MAI_URL   = 25
+  static TAG_MAI_CHAVE = 1;
+  static TAG_MAI_INFOS = 2;
+  static TAG_MAI_URL   = 25
 }
 
 export interface PIXDynamicElements extends EMVQRCodeBasicElements {

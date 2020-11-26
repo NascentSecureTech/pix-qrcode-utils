@@ -1,6 +1,13 @@
+class PIX {
+    static GUI = 'br.gov.bcb.pix';
+    static TAG_MAI_CHAVE = 1;
+    static TAG_MAI_INFOS = 2;
+    static TAG_MAI_URL = 25;
+}
 const defaultParams = {
     encoding: 'utf8'
 };
+const PIX1 = PIX;
 function numToHex(n, digits) {
     let hex = n.toString(16).toUpperCase();
     if (digits) {
@@ -351,6 +358,13 @@ const rootScheme = {
     name: 'root',
     elementMap: rootSchemeMap
 };
+class EMVQR {
+    static MAI_TEMPLATE_FIRST = 26;
+    static MAI_TEMPLATE_LAST = 51;
+    static TAG_TEMPLATE_GUI = 0;
+    static TAG_ADDITIONAL_DATA = 62;
+    static TAG_AD_REF_LABEL = 5;
+}
 const defaultParams1 = {
     encoding: 'utf8'
 };
@@ -1209,4 +1223,4 @@ class PIXQRCode {
     }
 }
 const PIXQRCode1 = PIXQRCode;
-export { PIXQRCodeError1 as PIXQRCodeError, PIXQRErrorCode1 as PIXQRErrorCode, PIXQRCode1 as PIXQRCode };
+export { PIXQRCodeError1 as PIXQRCodeError, PIXQRErrorCode1 as PIXQRErrorCode, PIX1 as PIX, PIXQRCode1 as PIXQRCode };

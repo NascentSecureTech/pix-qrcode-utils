@@ -18,7 +18,8 @@ const mandatoryElements = [
 ];
 export const TAG_INIT = 0;
 export const TAG_CRC = 63;
-export const TAG_TEMPLATE_GUI = 0;
+const TAG_TEMPLATE_GUI1 = 0;
+export { TAG_TEMPLATE_GUI1 as TAG_TEMPLATE_GUI };
 function numToHex(n, digits) {
     let hex = n.toString(16).toUpperCase();
     if (digits) {
@@ -351,6 +352,13 @@ export const rootScheme = {
     name: 'root',
     elementMap: rootSchemeMap
 };
+export class EMVQR {
+    static MAI_TEMPLATE_FIRST = 26;
+    static MAI_TEMPLATE_LAST = 51;
+    static TAG_TEMPLATE_GUI = 0;
+    static TAG_ADDITIONAL_DATA = 62;
+    static TAG_AD_REF_LABEL = 5;
+}
 const defaultParams = {
     encoding: 'utf8'
 };
