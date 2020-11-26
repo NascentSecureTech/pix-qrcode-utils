@@ -6,7 +6,7 @@ export const TAG_CRC = 63;
 
 type QRElementMap = Map<number, QRCodeNode>;
 
-type QRNodeType = 'root' | 'element' | 'template' | 'identified-template' | 'void';
+type QRNodeType = 'root' | 'data' | 'template' | 'identified-template' | 'void';
 
 export class QRCodeNode {
   type: QRNodeType;
@@ -69,7 +69,7 @@ export class QRCodeNode {
 
       let content = sequence.substr( index+2+2, len );
 
-      elements.set( tag, new QRCodeNode( 'element', content, tag, pos ) );
+      elements.set( tag, new QRCodeNode( 'data', content, tag, pos ) );
 
       index += 4 + len;
     }
@@ -102,8 +102,21 @@ export class QRCodeNode {
     return this.elements.get( tag )!;
   }
 
-  newElement( tag: number, content: string ): QRCodeNode {
-    let node = new QRCodeNode( "element", content, tag );
+  newDataElement( tag: number, content: string ): QRCodeNode {
+    let node = new QRCodeNode( "data", content, tag );
+
+    this.elements.set( tag, node );
+
+    return node;
+  }
+
+  newTemplateElement( tag: number, nodes?: QRCodeNode[] ): QRCodeNode {
+    let node = new QRCodeNode( "template", "", tag );
+
+    if ( nodes ) {
+      for( const child of nodes )
+        node.elements.set( child.tag!, child );
+    }
 
     this.elements.set( tag, node );
 
@@ -119,14 +132,14 @@ export class QRCodeNode {
       type: this.type,
       tag: this.tag??undefined,
       content: this.content,
-      elements: !this.isType( "element" ) ? Array.from( this.elements.values() ).map( (value: QRCodeNode ) => value.toJSON() ): undefined
+      elements: !this.isType( "data" ) ? Array.from( this.elements.values() ).map( (value: QRCodeNode ) => value.toJSON() ): undefined
     };
 
     return json;
   }
 
   ensureElement( tag: number, defaultContent: string = "" ): QRCodeNode {
-    return this.hasElement( tag ) ? this.getElement( tag ) : this.newElement( tag, defaultContent );
+    return this.hasElement( tag ) ? this.getElement( tag ) : this.newDataElement( tag, defaultContent );
   }
 
   buildTagLength(): string {
@@ -146,7 +159,7 @@ export class QRCodeNode {
       offset += 2 + 2;
 
     // rebuild content from children
-    if ( !this.isType( "element" ) ) {
+    if ( !this.isType( "data" ) ) {
       let qrs: string[] = [];
 
       this.elements.forEach( ( element )=> {

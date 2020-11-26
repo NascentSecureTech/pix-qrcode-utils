@@ -71,7 +71,7 @@ function validateElement( val: string|undefined, schema: QRSchemaElement, path: 
 function validateNode( node: QRCodeNode, schema: QRSchemaElement, path: string = "") {
   //console.log( "Validating: " + path + `=[${node.content}]:${node.type}` )
 
-  if ( node.isType( 'element' ) ) {
+  if ( node.isType( 'data' ) ) {
     validateElement( node.content, schema, path );
   }
   else {

@@ -82,7 +82,7 @@ Deno.test( {
       throw new Error( "FAIL: Rebuild after reset of CRC is different" );
     }
 
-    qr.newElement( 1, "11");
+    qr.newDataElement( 1, "11");
 
     if ( qrs == qr.buildQRString() ) {
       throw new Error( "FAIL: Recalc CRC after mod is the same")
@@ -111,7 +111,7 @@ Deno.test( {
 
           let result = "OK";
 
-          let res = await qr.validateCode( (v,res) => {
+          let res = await qr.validateCode( (_v,_res) => {
             //console.log( v.ruleInfo.id, res.status );
           });
 

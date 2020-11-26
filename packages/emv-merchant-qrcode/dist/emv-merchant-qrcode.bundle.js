@@ -382,7 +382,7 @@ function validateElement(val, schema, path) {
     }
 }
 function validateNode(node, schema, path = "") {
-    if (node.isType('element')) {
+    if (node.isType('data')) {
         validateElement(node.content, schema, path);
     } else {
         node.elements.forEach((element)=>{
@@ -438,7 +438,7 @@ export class QRCodeNode {
                 throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: invalid length @" + (1 + pos));
             }
             let content1 = sequence.substr(index + 2 + 2, len);
-            elements.set(tag1, new QRCodeNode('element', content1, tag1, pos));
+            elements.set(tag1, new QRCodeNode('data', content1, tag1, pos));
             index += 4 + len;
         }
         if (index != end) {
@@ -460,8 +460,16 @@ export class QRCodeNode {
         if (!this.elements.has(tag)) return new QRCodeNode("void", "", tag);
         return this.elements.get(tag);
     }
-    newElement(tag, content) {
-        let node = new QRCodeNode("element", content, tag);
+    newDataElement(tag, content) {
+        let node = new QRCodeNode("data", content, tag);
+        this.elements.set(tag, node);
+        return node;
+    }
+    newTemplateElement(tag, nodes) {
+        let node = new QRCodeNode("template", "", tag);
+        if (nodes) {
+            for (const child of nodes)node.elements.set(child.tag, child);
+        }
         this.elements.set(tag, node);
         return node;
     }
@@ -473,13 +481,13 @@ export class QRCodeNode {
             type: this.type,
             tag: this.tag ?? undefined,
             content: this.content,
-            elements: !this.isType("element") ? Array.from(this.elements.values()).map((value)=>value.toJSON()
+            elements: !this.isType("data") ? Array.from(this.elements.values()).map((value)=>value.toJSON()
             ) : undefined
         };
         return json;
     }
     ensureElement(tag, defaultContent = "") {
-        return this.hasElement(tag) ? this.getElement(tag) : this.newElement(tag, defaultContent);
+        return this.hasElement(tag) ? this.getElement(tag) : this.newDataElement(tag, defaultContent);
     }
     buildTagLength() {
         let ts = ("00" + this.tag.toString()).slice(-2);
@@ -490,7 +498,7 @@ export class QRCodeNode {
         const isRoot = this.isType("root");
         this.baseOffset = offset;
         if (!isRoot) offset += 2 + 2;
-        if (!this.isType("element")) {
+        if (!this.isType("data")) {
             let qrs = [];
             this.elements.forEach((element)=>{
                 if (!isRoot || !valueIn([
@@ -886,7 +894,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
         let content2 = this.content;
         content2 = this.ensureElement(0, "01").buildQRString();
         content2 += super.buildQRString(content2.length);
-        content2 += this.newElement(63, "0000").buildQRString(content2.length).slice(0, -4);
+        content2 += this.newDataElement(63, "0000").buildQRString(content2.length).slice(0, -4);
         const crc = computeCRC(content2);
         this.getElement(63).content = crc;
         this.baseOffset = 0;
@@ -896,7 +904,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
     dumpCode() {
         function dumpNode(node, scheme, indent) {
             let result = "";
-            if (node.isType('element')) {
+            if (node.isType('data')) {
                 result += indent + ("00" + node.tag).slice(-2) + ' (' + scheme.name + ')' + "\n";
                 result += indent + '  ' + node.content + "\n";
             } else {

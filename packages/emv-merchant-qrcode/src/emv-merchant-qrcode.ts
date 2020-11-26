@@ -89,7 +89,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
     // Recalculate CRC - tag "63" - last element in QR string
 
     // reset CRC with correct length and concat tag+length
-    content += this.newElement( TAG_CRC, "0000" ).buildQRString( content.length ).slice( 0, -4 );
+    content += this.newDataElement( TAG_CRC, "0000" ).buildQRString( content.length ).slice( 0, -4 );
 
     // Recalculate CRC .. upto to and including tag+length of "63"
     const crc = computeCRC( content );
@@ -106,7 +106,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
     function dumpNode( node: QRCodeNode, scheme: QRSchemaElement, indent: string ): string {
       let result = "";
 
-      if ( node.isType( 'element') ) {
+      if ( node.isType( 'data' ) ) {
         result += indent + ("00"+node.tag).slice(-2)+ ' (' + scheme.name + ')' + "\n";
         result += indent + '  '+node.content + "\n";
       }
