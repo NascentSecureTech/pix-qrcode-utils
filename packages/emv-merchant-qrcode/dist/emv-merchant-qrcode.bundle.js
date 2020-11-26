@@ -18,6 +18,7 @@ const mandatoryElements = [
 ];
 export const TAG_INIT = 0;
 export const TAG_CRC = 63;
+export const TAG_TEMPLATE_GUI = 0;
 function numToHex(n, digits) {
     let hex = n.toString(16).toUpperCase();
     if (digits) {
@@ -465,13 +466,19 @@ export class QRCodeNode {
         this.elements.set(tag, node);
         return node;
     }
-    newTemplateElement(tag, nodes) {
-        let node = new QRCodeNode("template", "", tag);
-        if (nodes) {
-            for (const child of nodes)node.elements.set(child.tag, child);
+    newTemplateElement(tag, lastTag, isIdentified = false, nodes) {
+        if (!lastTag) lastTag = tag;
+        while(tag <= lastTag){
+            if (!this.hasElement(tag)) {
+                let node = new QRCodeNode(isIdentified ? "identified-template" : "template", "", tag);
+                if (nodes) {
+                    for (const child of nodes)node.elements.set(child.tag, child);
+                }
+                this.elements.set(tag, node);
+            }
+            ++tag;
         }
-        this.elements.set(tag, node);
-        return node;
+        throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, "Unable to insert template");
     }
     deleteElement(tag) {
         this.elements.delete(tag);
@@ -486,7 +493,7 @@ export class QRCodeNode {
         };
         return json;
     }
-    ensureElement(tag, defaultContent = "") {
+    ensureDataElement(tag, defaultContent = "") {
         return this.hasElement(tag) ? this.getElement(tag) : this.newDataElement(tag, defaultContent);
     }
     buildTagLength() {
@@ -867,24 +874,37 @@ export class EMVMerchantQRCode extends QRCodeNode {
     constructor(qrCode1, params1 = defaultParams){
         super('root', convertCode(qrCode1, params1.encoding));
     }
+    static createCode(basicElements) {
+        let root = new EMVMerchantQRCode();
+        if (basicElements) {
+            root.newDataElement(52, basicElements.merchantCategoryCode);
+            root.newDataElement(53, ("000" + basicElements.transactionCurrency).slice(-3));
+            root.newDataElement(58, basicElements.countryCode);
+            root.newDataElement(59, basicElements.merchantCity);
+            root.newDataElement(70, basicElements.merchantName);
+            if (basicElements.oneTime) root.newDataElement(2, "12");
+            if (basicElements.transactionAmount) root.newDataElement(54, basicElements.transactionAmount.toFixed(2));
+        }
+        return root;
+    }
     static parseCode(qrCode, params) {
         params = {
             ...defaultParams,
             ...params
         };
         let root = new EMVMerchantQRCode(qrCode, params);
-        function toContainer(node, isIdentified, tag2, lastTag) {
+        function toTemplate(node, isIdentified, tag2, lastTag) {
             for(let index = tag2; index <= (lastTag ?? tag2); ++index){
                 if (node.hasElement(index)) node.getElement(index).parseAsTemplate(isIdentified);
             }
         }
-        toContainer(root, true, 26, 51);
+        toTemplate(root, true, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
         if (root.hasElement(62)) {
-            toContainer(root, false, 62);
-            toContainer(root.getElement(62), true, 50, 99);
+            toTemplate(root, false, 62);
+            toTemplate(root.getElement(62), true, 50, 99);
         }
-        toContainer(root, false, 64);
-        toContainer(root, true, 80, 99);
+        toTemplate(root, false, 64);
+        toTemplate(root, true, 80, 99);
         return root;
     }
     async validateCode(observer) {
@@ -892,7 +912,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
     }
     buildQRString() {
         let content2 = this.content;
-        content2 = this.ensureElement(0, "01").buildQRString();
+        content2 = this.ensureDataElement(0, "01").buildQRString();
         content2 += super.buildQRString(content2.length);
         content2 += this.newDataElement(63, "0000").buildQRString(content2.length).slice(0, -4);
         const crc = computeCRC(content2);

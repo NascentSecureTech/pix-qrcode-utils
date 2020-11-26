@@ -3,6 +3,7 @@ import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
 
 export const TAG_INIT = 0;
 export const TAG_CRC = 63;
+export const TAG_TEMPLATE_GUI = 0;
 
 type QRElementMap = Map<number, QRCodeNode>;
 
@@ -90,7 +91,6 @@ export class QRCodeNode {
     return this;
   }
 
-
   hasElement( tag: number ): boolean {
     return this.elements.has( tag );
   }
@@ -110,17 +110,25 @@ export class QRCodeNode {
     return node;
   }
 
-  newTemplateElement( tag: number, nodes?: QRCodeNode[] ): QRCodeNode {
-    let node = new QRCodeNode( "template", "", tag );
+  newTemplateElement( tag: number, lastTag?: number, isIdentified: boolean = false, nodes?: QRCodeNode[] ): QRCodeNode {
+    if ( !lastTag ) lastTag = tag;
 
-    if ( nodes ) {
-      for( const child of nodes )
-        node.elements.set( child.tag!, child );
+    while( tag <= lastTag ) {
+      if ( !this.hasElement( tag ) ) {
+        let node = new QRCodeNode( isIdentified ? "identified-template" : "template", "", tag );
+
+        if ( nodes ) {
+          for( const child of nodes )
+            node.elements.set( child.tag!, child );
+        }
+
+        this.elements.set( tag, node );
+      }
+
+      ++tag;
     }
 
-    this.elements.set( tag, node );
-
-    return node;
+    throw new QRCodeError( QRErrorCode.INVALID_ELEMENT, "Unable to insert template" )
   }
 
   deleteElement( tag: number ) {
@@ -138,11 +146,11 @@ export class QRCodeNode {
     return json;
   }
 
-  ensureElement( tag: number, defaultContent: string = "" ): QRCodeNode {
+  ensureDataElement( tag: number, defaultContent: string = "" ): QRCodeNode {
     return this.hasElement( tag ) ? this.getElement( tag ) : this.newDataElement( tag, defaultContent );
   }
 
-  buildTagLength(): string {
+  private buildTagLength(): string {
     let ts = ("00" + this.tag!.toString()).slice(-2);
 
     let len = ("00" + this.content.length.toString()).slice(-2);
@@ -191,8 +199,8 @@ export class QRCodeNode {
       if ( element.isType('identified-template')
         && element.tag! >= first
         && element.tag! <= last
-        && element.hasElement( 0 )
-        && element.getElement(0).content.toUpperCase() == id.toUpperCase() ) {
+        && element.hasElement( TAG_TEMPLATE_GUI )
+        && element.getElement( TAG_TEMPLATE_GUI ).content.toUpperCase() == id.toUpperCase() ) {
           found.push( element );
         }
     })

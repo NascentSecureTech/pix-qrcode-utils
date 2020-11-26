@@ -104,7 +104,7 @@ Deno.test( {
         let test = testCodes[key];
         let qrs = test.qr;
         let options: EMVMerchantQRParams = {
-          encoding: (key.indexOf( ':B64' ) >= 0) ? "base64" : "utf8"
+          //encoding: (key.indexOf( ':B64' ) >= 0) ? "base64" : "utf8"
         }
 
           let qr = EMVMerchantQRCode.parseCode( qrs, options );

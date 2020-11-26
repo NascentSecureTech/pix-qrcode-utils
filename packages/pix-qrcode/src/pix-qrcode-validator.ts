@@ -1,5 +1,5 @@
 import { RuleValidator, ValidationError } from './deps.ts';
-import { PIXQRCode, GUI_PIX, PIX_MAI_URL, PIX_MAI_DICT } from './pix-qrcode.ts';
+import { PIXQRCode, PIX } from './pix-qrcode.ts';
 
 export enum PIXQRErrorCode {
   // ...QRErrorCode
@@ -39,7 +39,7 @@ function addDynamicRules( v: RuleValidator<PIXQRCode> ) {
     when: ( pix ) => pix.isPIX( "dynamic" ),
     description: "Correct URL coded in dynamic PIX",
     rule: ( pix ) => {
-      const url = pix.getMAI().getElement( PIX_MAI_URL );
+      const url = pix.getMAI().getElement( PIX.TAG_MAI_URL );
 
       if ( url && url.content.startsWith( "http") )
         throw new PIXQRCodeError( PIXQRErrorCode.PIX_MAI_INVALID, "URL must not contain protocol (https://)" );
@@ -54,7 +54,7 @@ export function getRuleValidator( ): RuleValidator<PIXQRCode> {
       id: "pix-mai",
       description: "Contains a PIX Merchant Account Information",
       rule: ( pix ) => {
-        let maiList = pix.emvQRCode.findIdentifiedTemplate( GUI_PIX, 26, 51 );
+        let maiList = pix.emvQRCode.findIdentifiedTemplate( PIX.GUI, 26, 51 );
 
         if ( maiList.length == 0 ) {
           throw new PIXQRCodeError( PIXQRErrorCode.MISSING_PIX_MAI, "PIX MAI not found")
@@ -69,18 +69,18 @@ export function getRuleValidator( ): RuleValidator<PIXQRCode> {
       id: "pix-static-or-dynamic",
       description: "Contains a PIX Merchant Account Information",
       rule: ( pix ) => {
-        let pixMAI = pix.emvQRCode.findIdentifiedTemplate( GUI_PIX, 26, 51 )[ 0 ];
+        let pixMAI = pix.emvQRCode.findIdentifiedTemplate( PIX.GUI, 26, 51 )[ 0 ];
 
-        // 3. PIX-MAI contents must indicate DICT or URL
-        let pixStatic = pixMAI.hasElement( PIX_MAI_DICT ); // DICT KEY
+        // 3. PIX-MAI contents must indicate CHAVE or URL
+        let pixStatic = pixMAI.hasElement( PIX.TAG_MAI_CHAVE ); // DICT KEY
 
         if( pixStatic ) {
-          if ( pixMAI.hasElement( PIX_MAI_URL ) ) {
-            throw new PIXQRCodeError( PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains both DICT and URL elements")
+          if ( pixMAI.hasElement( PIX.TAG_MAI_URL ) ) {
+            throw new PIXQRCodeError( PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains both CHAVE and URL elements")
           }
         }
         else { // must be dynamic
-          if ( !pixMAI.hasElement( PIX_MAI_URL ) ) {
+          if ( !pixMAI.hasElement( PIX.TAG_MAI_URL ) ) {
             throw new PIXQRCodeError( PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements")
           }
         }
