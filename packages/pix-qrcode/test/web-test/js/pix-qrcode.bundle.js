@@ -1,1 +1,0 @@
-../../../dist/pix-qrcode.bundle.js

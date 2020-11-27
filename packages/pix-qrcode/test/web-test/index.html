@@ -40,126 +40,14 @@
       </div>
       </div>
     </section>
+    <div class="columns container">
+      <div class="column is-one-third">(c) Sean Wykes 2020</div>
+      <div class="column is-one-third">https://nascent.com.br</div>
+      <div class="column is-one-third">https://github.com/NascentSecureTech/pix-qrcode-utils</div>
+    </div>
   </body>
   <script type="module">
-    import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError, GUI_PIX } from "/js/pix-qrcode.bundle.js";
-    import { PIXPayloadRetriever } from "/js/pix-qrcode.bundle.js";
-
-    function handleQRError( E ) {
-      let result = "ERROR";
-
-      if ( E instanceof PIXQRCodeError ) {
-        result = PIXQRErrorCode[ E.errorCode ] + " - " + E.message;
-      }
-      else if ( E instanceof Error ) {
-        result = "ERROR - " + E.message;
-      }
-
-      return result;
-    }
-
-    function showResult( success, error ) {
-      let el = document.getElementById('decoded');
-
-      el.classList.remove("has-background-danger");
-      el.classList.remove('has-text-secondary');
-      el.classList.remove( 'is-hidden' );
-
-      if ( error && error.length > 0 ) {
-        el.value = error;
-        el.classList.add("has-background-danger");
-        el.classList.add('has-text-secondary');
-      }
-      else if ( success && success.length > 0 ) {
-        el.value = success;
-      }
-      else {
-        el.classList.add( 'is-hidden' );
-      }
-    }
-
-    function fixCRC( value ) {
-      let $qr = document.getElementById('qr-string');
-
-      try {
-        let qr = PIXQRCode.parseCode( value );
-
-        value = qr.emvQRCode.buildQRString();
-
-        $qr.value = value;
-
-	      decodeCode( value );
-      }
-      catch( E ) {
-        showResult( null, handleQRError( E ) );
-      }
-    }
-
-    let $qrImage;
-
-    async function decodeCode( value ) {
-      let qr;
-
-      if ( value.length ) {
-        try {
-          qr = PIXQRCode.parseCode( value );
-
-          await qr.validateCode()
-
-          //showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
-          showResult( qr.emvQRCode.dumpCode() );
-
-      	  let emv = qr.emvQRCode;
-
-      	  let $fetch = document.getElementById('btn-fetch-dynamic');
-
-      	  $fetch.disabled = !( qr.isPIX('dynamic' ) );
-
-          $qrImage = document.getElementById('qr-bitmap');
-
-      	  new QRious({
-            element: $qrImage,
-            value: value,
-      	    size: 200
-          });
-        }
-        catch( E ) {
-          showResult( null, handleQRError( E ) );
-      	  if ( $qrImage ) $qrImage.src = '#';
-        }
-      }
-      else {
-        showResult();
-      	if ( $qrImage ) $qrImage.src = '#';
-      }
-    }
-
-    function fetchDynamic( value ) {
-      let qr = PIXQRCode.parseCode( value );
-
-      console.log( qr );
-      qr.validateCode();
-
-      let tmpl = qr.emvQRCode.findIdentifiedTemplate( GUI_PIX, 26, 51 )[ 0 ];
-
-      let url = tmpl.getElement(25).content;
-      console.log( url );
-
-      let payload = new PIXPayloadRetriever().fetchPayload( url );
-
-      payload.then( results => {
-      	let json = {
-      	   "$hdr": results.header,
-      	   ...results.payload
-        };
-
-        showResult( JSON.stringify( json, null, 2 ) );
-      } )
-      .catch( (e) => {
-        console.log( "Fetch failed: " + e.message );
-      } );
-
-    }
+    import { decodeCode, fixCRC, fetchDynamic } from "/js/pix-qrcode-wrapper.js";
 
     window.decodeCode = decodeCode;
     window.fixCRC = fixCRC;

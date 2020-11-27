@@ -1,11 +1,11 @@
-export var QRErrorCode;
+var QRErrorCode2;
 (function(QRErrorCode1) {
     QRErrorCode1[QRErrorCode1["INVALID_PARAM"] = 0] = "INVALID_PARAM";
     QRErrorCode1[QRErrorCode1["INVALID_QRCODE"] = 1] = "INVALID_QRCODE";
     QRErrorCode1[QRErrorCode1["CRC_MISMATCH"] = 2] = "CRC_MISMATCH";
     QRErrorCode1[QRErrorCode1["MISSING_MANDATORY_ELEMENT"] = 3] = "MISSING_MANDATORY_ELEMENT";
     QRErrorCode1[QRErrorCode1["INVALID_ELEMENT"] = 4] = "INVALID_ELEMENT";
-})(QRErrorCode || (QRErrorCode = {
+})(QRErrorCode2 || (QRErrorCode2 = {
 }));
 const mandatoryElements = [
     0,
@@ -16,10 +16,16 @@ const mandatoryElements = [
     60,
     63
 ];
-export const TAG_INIT = 0;
-export const TAG_CRC = 63;
-const TAG_TEMPLATE_GUI1 = 0;
-export { TAG_TEMPLATE_GUI1 as TAG_TEMPLATE_GUI };
+export class EMVQR {
+    static TAG_INIT = 0;
+    static TAG_CRC = 63;
+    static TAG_MAX = 99;
+    static MAI_TEMPLATE_FIRST = 26;
+    static MAI_TEMPLATE_LAST = 51;
+    static TAG_TEMPLATE_GUI = 0;
+    static TAG_ADDITIONAL_DATA = 62;
+    static TAG_AD_REF_LABEL = 5;
+}
 function numToHex(n, digits) {
     let hex = n.toString(16).toUpperCase();
     if (digits) {
@@ -352,42 +358,37 @@ export const rootScheme = {
     name: 'root',
     elementMap: rootSchemeMap
 };
-export class EMVQR {
-    static MAI_TEMPLATE_FIRST = 26;
-    static MAI_TEMPLATE_LAST = 51;
-    static TAG_TEMPLATE_GUI = 0;
-    static TAG_ADDITIONAL_DATA = 62;
-    static TAG_AD_REF_LABEL = 5;
-}
 const defaultParams = {
     encoding: 'utf8'
 };
-export class QRCodeError extends ValidationError {
+const QRErrorCode1 = QRErrorCode2;
+class QRCodeError2 extends ValidationError {
     constructor(errorCode1, message1){
         super(errorCode1, message1);
         this.errorCode = errorCode1;
-        this.errorName = "EMVQR-" + QRErrorCode[errorCode1];
+        this.errorName = "EMVQR-" + QRErrorCode2[errorCode1];
     }
 }
+const QRCodeError1 = QRCodeError2;
 function validateElement(val, schema, path) {
     if (val == undefined) {
         if (!schema.optional) {
-            throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, `Element ${path} missing and is mandatory`);
+            throw new QRCodeError2(QRErrorCode2.MISSING_MANDATORY_ELEMENT, `Element ${path} missing and is mandatory`);
         }
         return;
     }
     if (schema.length != undefined) {
         if (schema.length instanceof Object) {
             let lenInfo = schema.length;
-            if (lenInfo.max && val.length > lenInfo.max) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} must have maximum length of ${lenInfo.max}`);
-            if (lenInfo.min && val.length < lenInfo.min) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} must have minimum length of ${lenInfo.min}`);
+            if (lenInfo.max && val.length > lenInfo.max) throw new QRCodeError2(QRErrorCode2.INVALID_ELEMENT, `Element ${path} must have maximum length of ${lenInfo.max}`);
+            if (lenInfo.min && val.length < lenInfo.min) throw new QRCodeError2(QRErrorCode2.INVALID_ELEMENT, `Element ${path} must have minimum length of ${lenInfo.min}`);
         } else {
-            if (val.length != schema.length) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} must have length of ${schema.length}`);
+            if (val.length != schema.length) throw new QRCodeError2(QRErrorCode2.INVALID_ELEMENT, `Element ${path} must have length of ${schema.length}`);
         }
     }
     if (schema.pattern != undefined) {
         let pattern = schema.pattern instanceof RegExp ? schema.pattern : new RegExp(schema.pattern);
-        if (!pattern.test(val)) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} has invalid contents`);
+        if (!pattern.test(val)) throw new QRCodeError2(QRErrorCode2.INVALID_ELEMENT, `Element ${path} has invalid contents`);
     }
 }
 function validateNode(node, schema, path = "") {
@@ -439,19 +440,19 @@ export class QRCodeNode {
         while(index + 4 < end){
             let pos = baseOffset + index;
             if (!/^\d{4}$/.test(sequence.substr(index, 4))) {
-                throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: invalid tag or length characters @ " + (1 + pos));
+                throw new QRCodeError2(QRErrorCode2.INVALID_QRCODE, "Error parsing qrcode string: invalid tag or length characters @ " + (1 + pos));
             }
             let tag1 = parseInt(sequence.substr(index, 2));
             let len = parseInt(sequence.substr(index + 2, 2));
             if (index + len + 4 > end) {
-                throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: invalid length @" + (1 + pos));
+                throw new QRCodeError2(QRErrorCode2.INVALID_QRCODE, "Error parsing qrcode string: invalid length @" + (1 + pos));
             }
             let content1 = sequence.substr(index + 2 + 2, len);
             elements.set(tag1, new QRCodeNode('data', content1, tag1, pos));
             index += 4 + len;
         }
         if (index != end) {
-            throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: extra characters at end @" + (1 + baseOffset + index));
+            throw new QRCodeError2(QRErrorCode2.INVALID_QRCODE, "Error parsing qrcode string: extra characters at end @" + (1 + baseOffset + index));
         }
         return elements;
     }
@@ -486,7 +487,7 @@ export class QRCodeNode {
             }
             ++tag;
         }
-        throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, "Unable to insert template");
+        throw new QRCodeError2(QRErrorCode2.INVALID_ELEMENT, "Unable to insert template");
     }
     deleteElement(tag) {
         this.elements.delete(tag);
@@ -517,8 +518,8 @@ export class QRCodeNode {
             let qrs = [];
             this.elements.forEach((element)=>{
                 if (!isRoot || !valueIn([
-                    0,
-                    63
+                    EMVQR.TAG_INIT,
+                    EMVQR.TAG_CRC
                 ], element.tag)) {
                     let els = element.buildQRString(offset);
                     qrs.push(els);
@@ -533,10 +534,10 @@ export class QRCodeNode {
         }
         return content2;
     }
-    findIdentifiedTemplate(id, first = 0, last = 99) {
+    findIdentifiedTemplate(id, first = 0, last = EMVQR.TAG_MAX) {
         let found = [];
         this.elements.forEach((element)=>{
-            if (element.isType('identified-template') && element.tag >= first && element.tag <= last && element.hasElement(0) && element.getElement(0).content.toUpperCase() == id.toUpperCase()) {
+            if (element.isType('identified-template') && element.tag >= first && element.tag <= last && element.hasElement(EMVQR.TAG_TEMPLATE_GUI) && element.getElement(EMVQR.TAG_TEMPLATE_GUI).content.toUpperCase() == id.toUpperCase()) {
                 found.push(element);
             }
         });
@@ -815,10 +816,11 @@ function computeCRC(str, invert = false) {
     return hex;
 }
 function convertCode(qrCode, _encoding) {
-    if (_encoding && _encoding != 'utf8') throw new QRCodeError(QRErrorCode.INVALID_PARAM, "encoding must be 'utf8'");
+    if (_encoding && _encoding != 'utf8') throw new QRCodeError2(QRErrorCode2.INVALID_PARAM, "encoding must be 'utf8'");
     return qrCode ?? '';
 }
-export function getRuleValidator() {
+export { QRCodeError1 as QRCodeError, QRErrorCode1 as QRErrorCode };
+function getRuleValidator() {
     return RuleValidator.get({
         id: "EMVQR"
     }).addRule({
@@ -826,10 +828,10 @@ export function getRuleValidator() {
         description: "Initial element is '00' with contents '01'",
         rule: (root, _val)=>{
             if (root.getElement(0).baseOffset != 0) {
-                throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Missing start element (00)");
+                throw new QRCodeError2(QRErrorCode2.INVALID_QRCODE, "Missing start element (00)");
             }
             if (root.getElement(0).content != '01') {
-                throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Invalid value for start element (00)");
+                throw new QRCodeError2(QRErrorCode2.INVALID_QRCODE, "Invalid value for start element (00)");
             }
         }
     }).addRule({
@@ -838,7 +840,7 @@ export function getRuleValidator() {
         rule: (root, _val)=>{
             let crcEl = root.getElement(63);
             if (crcEl.baseOffset != root.content.length - 8 || root.content.slice(-8, -4) != '6304') {
-                throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "CRC must be final element (63)");
+                throw new QRCodeError2(QRErrorCode2.INVALID_QRCODE, "CRC must be final element (63)");
             }
         }
     }).addRule({
@@ -848,7 +850,7 @@ export function getRuleValidator() {
             let crcEl = root.getElement(63);
             let calculatedCRC = computeCRC(root.content.slice(0, -4));
             if (calculatedCRC != crcEl.content) {
-                throw new QRCodeError(QRErrorCode.CRC_MISMATCH, "Invalid CRC");
+                throw new QRCodeError2(QRErrorCode2.CRC_MISMATCH, "Invalid CRC");
             }
         }
     }).addRule({
@@ -858,7 +860,7 @@ export function getRuleValidator() {
             let maiList = Array.from(root.elements.keys()).filter((v)=>v >= 2 && v <= 51
             );
             if (maiList.length == 0) {
-                throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, "Must have at least one Merchant Account Information");
+                throw new QRCodeError2(QRErrorCode2.MISSING_MANDATORY_ELEMENT, "Must have at least one Merchant Account Information");
             }
         }
     }).addRule({
@@ -866,7 +868,7 @@ export function getRuleValidator() {
         description: "Contains EMV mandatory elements",
         rule: (root, _val)=>{
             mandatoryElements.forEach((tag2)=>{
-                if (!root.hasElement(tag2)) throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, "Missing mandatory tag (" + tag2 + ")");
+                if (!root.hasElement(tag2)) throw new QRCodeError2(QRErrorCode2.MISSING_MANDATORY_ELEMENT, "Missing mandatory tag (" + tag2 + ")");
             });
         }
     }).addRule({
@@ -907,9 +909,9 @@ export class EMVMerchantQRCode extends QRCodeNode {
             }
         }
         toTemplate(root, true, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
-        if (root.hasElement(62)) {
-            toTemplate(root, false, 62);
-            toTemplate(root.getElement(62), true, 50, 99);
+        if (root.hasElement(EMVQR.TAG_ADDITIONAL_DATA)) {
+            toTemplate(root, false, EMVQR.TAG_ADDITIONAL_DATA);
+            toTemplate(root.getElement(EMVQR.TAG_ADDITIONAL_DATA), true, 50, 99);
         }
         toTemplate(root, false, 64);
         toTemplate(root, true, 80, 99);
@@ -922,9 +924,9 @@ export class EMVMerchantQRCode extends QRCodeNode {
         let content2 = this.content;
         content2 = this.ensureDataElement(0, "01").buildQRString();
         content2 += super.buildQRString(content2.length);
-        content2 += this.newDataElement(63, "0000").buildQRString(content2.length).slice(0, -4);
+        content2 += this.newDataElement(EMVQR.TAG_CRC, "0000").buildQRString(content2.length).slice(0, -4);
         const crc = computeCRC(content2);
-        this.getElement(63).content = crc;
+        this.getElement(EMVQR.TAG_CRC).content = crc;
         this.baseOffset = 0;
         this.content = content2 = content2 + crc;
         return content2;

@@ -1,1 +1,0 @@
-../../../../emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js

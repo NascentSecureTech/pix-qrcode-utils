@@ -1,9 +1,7 @@
-import { RuleValidator, ValidationError, ValidationObserver } from './deps.ts';
+import { RuleValidator, ValidationError } from './deps.ts';
 import { QRSchemaElement, rootScheme } from './element-scheme.ts';
 import { QRCodeNode } from './qrcode-node.ts';
 import { computeCRC } from './crc.ts';
-
-export type { ValidationObserver };
 
 export enum QRErrorCode {
   INVALID_PARAM,

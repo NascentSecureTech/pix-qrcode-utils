@@ -1,9 +1,18 @@
 import { valueIn } from './deps.ts';
 import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
 
-export const TAG_INIT = 0;
-export const TAG_CRC = 63;
-export const TAG_TEMPLATE_GUI = 0;
+export class EMVQR {
+  static TAG_INIT = 0;
+  static TAG_CRC = 63;
+  static TAG_MAX = 99;
+
+  static MAI_TEMPLATE_FIRST = 26
+  static MAI_TEMPLATE_LAST = 51
+
+  static TAG_TEMPLATE_GUI = 0;
+  static TAG_ADDITIONAL_DATA = 62;
+  static TAG_AD_REF_LABEL = 5;
+}
 
 type QRElementMap = Map<number, QRCodeNode>;
 
@@ -171,7 +180,7 @@ export class QRCodeNode {
       let qrs: string[] = [];
 
       this.elements.forEach( ( element )=> {
-        if ( !isRoot || !valueIn( [ TAG_INIT, TAG_CRC ], element.tag )  ) {
+        if ( !isRoot || !valueIn( [ EMVQR.TAG_INIT, EMVQR.TAG_CRC ], element.tag )  ) {
           let els = element.buildQRString( offset );
 
           qrs.push( els );
@@ -192,15 +201,15 @@ export class QRCodeNode {
     return content;
   }
 
-  findIdentifiedTemplate( id: string, first: number = 0, last: number = 99 ): QRCodeNode[] {
+  findIdentifiedTemplate( id: string, first: number = 0, last: number = EMVQR.TAG_MAX ): QRCodeNode[] {
     let found: QRCodeNode[] = [];
 
     this.elements.forEach( (element) => {
       if ( element.isType('identified-template')
         && element.tag! >= first
         && element.tag! <= last
-        && element.hasElement( TAG_TEMPLATE_GUI )
-        && element.getElement( TAG_TEMPLATE_GUI ).content.toUpperCase() == id.toUpperCase() ) {
+        && element.hasElement( EMVQR.TAG_TEMPLATE_GUI )
+        && element.getElement( EMVQR.TAG_TEMPLATE_GUI ).content.toUpperCase() == id.toUpperCase() ) {
           found.push( element );
         }
     })

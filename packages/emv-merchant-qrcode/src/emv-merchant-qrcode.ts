@@ -1,17 +1,10 @@
-import { QRCodeNode, TAG_CRC } from './qrcode-node.ts';
-import { getRuleValidator, ValidationObserver } from './qrcode-validator.ts';
+import { ValidationObserver } from './deps.ts';
+
+import { QRCodeNode, EMVQR } from './qrcode-node.ts';
+import { getRuleValidator } from './qrcode-validator.ts';
 import { computeCRC } from './crc.ts';
 import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
 import { QRSchemaElement, rootScheme } from './element-scheme.ts';
-
-export class EMVQR {
-  static MAI_TEMPLATE_FIRST = 26
-  static MAI_TEMPLATE_LAST = 51
-
-  static TAG_TEMPLATE_GUI = 0;
-  static TAG_ADDITIONAL_DATA = 62;
-  static TAG_AD_REF_LABEL = 5;
-}
 
 export interface EMVMerchantQRParams {
   encoding?: 'utf8'// |'base64';
@@ -106,11 +99,11 @@ export class EMVMerchantQRCode extends QRCodeNode {
     toTemplate( root, true, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST );
 
     // EL62 Additional Data Field Template
-    if ( root.hasElement( 62 ) ) {
-      toTemplate( root, false, 62 );
+    if ( root.hasElement( EMVQR.TAG_ADDITIONAL_DATA ) ) {
+      toTemplate( root, false, EMVQR.TAG_ADDITIONAL_DATA );
 
-      // Payment system specific
-      toTemplate( root.getElement( 62 ), true, 50, 99 );
+      // Payment system specific .. child 50.99
+      toTemplate( root.getElement( EMVQR.TAG_ADDITIONAL_DATA ), true, 50, 99 );
     }
 
     // EL64 = Language stuff
@@ -144,11 +137,11 @@ export class EMVMerchantQRCode extends QRCodeNode {
     // Recalculate CRC - tag "63" - last element in QR string
 
     // reset CRC with correct length and concat tag+length
-    content += this.newDataElement( TAG_CRC, "0000" ).buildQRString( content.length ).slice( 0, -4 );
+    content += this.newDataElement( EMVQR.TAG_CRC, "0000" ).buildQRString( content.length ).slice( 0, -4 );
 
     // Recalculate CRC .. upto to and including tag+length of "63"
     const crc = computeCRC( content );
-    this.getElement( TAG_CRC ).content = crc;
+    this.getElement( EMVQR.TAG_CRC ).content = crc;
 
     // reset content
     this.baseOffset = 0;

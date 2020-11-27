@@ -573,7 +573,7 @@ const defaultParams1 = {
 const PIXQRErrorCode1 = PIXQRErrorCode2;
 const PIXQRCodeError1 = PIXQRCodeError2;
 const PIX1 = PIX2;
-var document, QRious;
+var document = window.document, QRious = window.QRious;
 function handleQRError(E) {
     let result = "ERROR";
     if (E instanceof PIXQRCodeError2) {
@@ -1259,7 +1259,15 @@ export async function decodeCode(value) {
     if (value.length) {
         try {
             qr = PIXQRCode2.parseCode(value);
-            await qr.validateCode();
+            let r = await Promise.all([
+                qr.emvQRCode.validateCode(),
+                qr.validateCode()
+            ]);
+            for (const res of r){
+                if (res.status == 'fail') {
+                    throw res.error;
+                }
+            }
             showResult(qr.emvQRCode.dumpCode());
             let $fetch = document.getElementById('btn-fetch-dynamic');
             $fetch.disabled = !qr.isPIX('dynamic');
