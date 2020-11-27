@@ -484,6 +484,7 @@ export class QRCodeNode {
                     for (const child of nodes)node.elements.set(child.tag, child);
                 }
                 this.elements.set(tag, node);
+                return node;
             }
             ++tag;
         }
@@ -512,6 +513,12 @@ export class QRCodeNode {
     }
     buildQRString(offset = 0) {
         const isRoot = this.isType("root");
+        if (isRoot) {
+            this.elements = new Map([
+                ...this.elements
+            ].sort((a, b)=>a[0] > b[0] ? 1 : -1
+            ));
+        }
         this.baseOffset = offset;
         if (!isRoot) offset += 2 + 2;
         if (!this.isType("data")) {
@@ -891,7 +898,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
             root.newDataElement(53, ("000" + basicElements.transactionCurrency).slice(-3));
             root.newDataElement(58, basicElements.countryCode);
             root.newDataElement(59, basicElements.merchantCity);
-            root.newDataElement(70, basicElements.merchantName);
+            root.newDataElement(60, basicElements.merchantName);
             if (basicElements.oneTime) root.newDataElement(2, "12");
             if (basicElements.transactionAmount) root.newDataElement(54, basicElements.transactionAmount.toFixed(2));
         }

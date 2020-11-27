@@ -66,7 +66,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
 
       root.newDataElement( 59, basicElements.merchantCity );
 
-      root.newDataElement( 70, basicElements.merchantName );
+      root.newDataElement( 60, basicElements.merchantName );
 
       if ( basicElements.oneTime )
         root.newDataElement( 2, "12" );

@@ -573,7 +573,7 @@ const defaultParams1 = {
 const PIXQRErrorCode1 = PIXQRErrorCode2;
 const PIXQRCodeError1 = PIXQRCodeError2;
 const PIX1 = PIX2;
-var document = window.document, QRious = window.QRious;
+var document = window.document, QRious = window.QRious, prompt = window.prompt;
 function handleQRError(E) {
     let result = "ERROR";
     if (E instanceof PIXQRCodeError2) {
@@ -584,18 +584,19 @@ function handleQRError(E) {
     return result;
 }
 function showResult(success, error) {
-    let el = document.getElementById('decoded');
-    el.classList.remove("has-background-danger");
-    el.classList.remove('has-text-secondary');
-    el.classList.remove('is-hidden');
+    let elDecoded = document.getElementById('decoded');
+    let elStatus = document.getElementById('qr-status');
+    elStatus.classList.remove("has-background-danger");
+    elStatus.classList.remove('has-text-secondary');
+    elDecoded.classList.remove('is-hidden');
     if (error && error.length > 0) {
-        el.value = error;
-        el.classList.add("has-background-danger");
-        el.classList.add('has-text-secondary');
+        elStatus.value = error;
+        elStatus.classList.add("has-background-danger");
+        elStatus.classList.add('has-text-secondary');
     } else if (success && success.length > 0) {
-        el.value = success;
+        elDecoded.value = success;
     } else {
-        el.classList.add('is-hidden');
+        elDecoded.classList.add('is-hidden');
     }
 }
 let $qrImage;
@@ -720,6 +721,7 @@ class QRCodeNode {
                     for (const child of nodes)node.elements.set(child.tag, child);
                 }
                 this.elements.set(tag, node);
+                return node;
             }
             ++tag;
         }
@@ -748,6 +750,12 @@ class QRCodeNode {
     }
     buildQRString(offset = 0) {
         const isRoot = this.isType("root");
+        if (isRoot) {
+            this.elements = new Map([
+                ...this.elements
+            ].sort((a, b)=>a[0] > b[0] ? 1 : -1
+            ));
+        }
         this.baseOffset = offset;
         if (!isRoot) offset += 2 + 2;
         if (!this.isType("data")) {
@@ -1127,7 +1135,7 @@ class EMVMerchantQRCode extends QRCodeNode {
             root.newDataElement(53, ("000" + basicElements.transactionCurrency).slice(-3));
             root.newDataElement(58, basicElements.countryCode);
             root.newDataElement(59, basicElements.merchantCity);
-            root.newDataElement(70, basicElements.merchantName);
+            root.newDataElement(60, basicElements.merchantName);
             if (basicElements.oneTime) root.newDataElement(2, "12");
             if (basicElements.transactionAmount) root.newDataElement(54, basicElements.transactionAmount.toFixed(2));
         }
@@ -1259,6 +1267,7 @@ export async function decodeCode(value) {
     if (value.length) {
         try {
             qr = PIXQRCode2.parseCode(value);
+            showResult(qr.emvQRCode.dumpCode());
             let r = await Promise.all([
                 qr.emvQRCode.validateCode(),
                 qr.validateCode()
@@ -1268,7 +1277,6 @@ export async function decodeCode(value) {
                     throw res.error;
                 }
             }
-            showResult(qr.emvQRCode.dumpCode());
             let $fetch = document.getElementById('btn-fetch-dynamic');
             $fetch.disabled = !qr.isPIX('dynamic');
             $qrImage = document.getElementById('qr-bitmap');
@@ -1315,4 +1323,34 @@ export function fixCRC(value) {
     } catch (E) {
         showResult(null, handleQRError(E));
     }
+}
+export function createCode(isDynamic = true) {
+    const defs = {
+        merchantCategoryCode: "0000",
+        transactionCurrency: 986,
+        countryCode: "BR",
+        merchantCity: "Porto Alegre",
+        merchantName: "PIX"
+    };
+    let elements;
+    if (isDynamic) {
+        let url = prompt("Colar URL");
+        elements = {
+            ...defs,
+            type: "dynamic",
+            url: url
+        };
+    } else {
+        let chave = prompt("Digitar chave");
+        elements = {
+            ...defs,
+            type: "static",
+            chave: chave
+        };
+    }
+    let qr = PIXQRCode2.createCode(elements);
+    let $qr = document.getElementById('qr-string');
+    let value = qr.emvQRCode.buildQRString();
+    $qr.value = value;
+    decodeCode(value);
 }

@@ -1,64 +1,139 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <title>PIX QRCode Tool</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" integrity="sha512-pUhApVQtLbnpLtJn6DuzDD5o2xtmLJnJ7oBoMsBnzOkVkpqofGLGPaBJ6ayD2zQe3lCgCibhJBi4cj5wAxwVKA==" crossorigin="anonymous"></script>
-
-    <!--script type="module" src="https://nascentsecuretech.github.io/emv-merchant-qrcode/dist/emv-merchant-qrcode.bundle.js"></script-->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css"
+    />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"
+      integrity="sha512-pUhApVQtLbnpLtJn6DuzDD5o2xtmLJnJ7oBoMsBnzOkVkpqofGLGPaBJ6ayD2zQe3lCgCibhJBi4cj5wAxwVKA=="
+      crossorigin="anonymous"
+    ></script>
   </head>
   <body>
     <section class="section container">
-      <div class="columns" style="border:1px solid blue">
+      <div class="columns" style="border: 1px solid blue;">
         <div class="column is-9">
           <label for="qr-string">QRCode</label>
-          <textarea id="qr-string" spellcheck="false"
-            style="width: 100%; height: 126px; word-break: break-all; font-family: 'Courier New'; font-size: 16px; font-weight: 800;"
-	    placeholder="Paste a QR-CODE string here ... "
-            oninput="decodeCode( this.value.trim() );"></textarea>
+          <textarea
+            id="qr-string"
+            spellcheck="false"
+            style="
+              width: 100%;
+              height: 126px;
+              word-break: break-all;
+              font-family: 'Courier New';
+              font-size: 16px;
+              font-weight: 800;
+            "
+            placeholder="Paste a QR-CODE string here ... "
+            oninput="decodeCode( this.value.trim() );"
+          ></textarea>
+          <textarea id="qr-status" class="column is-9" style="width: 100%; height: 44px; resize: none; font-size: 16px"></textarea>
         </div>
         <div class="column is-3 has-text-centered">
-          <img id="qr-bitmap" alt="QR-CODE" style="border: 1px solid; height: 200px; min-height: 200px; min-width: 200px; margin-left: auto; margin-right: auto;"></img>
+          <img
+            id="qr-bitmap"
+            alt="QR-CODE"
+            style="
+              border: 1px solid;
+              height: 200px;
+              min-height: 200px;
+              min-width: 200px;
+              margin-left: auto;
+              margin-right: auto;
+            "
+          />
         </div>
       </div>
-        <div class="buttons">
-          <button class="button is-primary" onclick="decodeCode( document.getElementById('qr-string').value.trim() );" placeholder="Decode PIX QR-CODE">Decode</button>
-          <button class="button is-secondary" onclick="fixCRC( document.getElementById('qr-string').value.trim() );" placeholder="Recalculate CRC">CRC</button>
-          <button id="btn-fetch-dynamic" class="button is-secondary" onclick="fetchDynamic( document.getElementById('qr-string').value.trim() );" disabled placeholder="Fetch and unwrap signed payload">Fetch URL</button>
-        </div>
-        <div class="columns">
-          <div class="column">
-
-
-        <label for="decoded">Decoded QR</label>
-        <textarea id="decoded"
-          style="width: 100%; height: 500px; font-family: 'Courier New'; font-size: 16px; font-weight: 800">
-        </textarea>
+      <div class="buttons">
+        <button
+          class="button is-primary"
+          onclick="decodeCode( document.getElementById('qr-string').value.trim() );"
+          placeholder="Decode PIX QR-CODE"
+        >
+          Decode
+        </button>
+        <button
+          class="button is-secondary"
+          onclick="createCode(  );"
+          placeholder="New Dynamic"
+        >
+          Create
+        </button>
+        <button
+          class="button is-secondary"
+          onclick="fixCRC( document.getElementById('qr-string').value.trim() );"
+          placeholder="Recalculate CRC"
+        >
+          CRC
+        </button>
+        <button
+          id="btn-fetch-dynamic"
+          class="button is-secondary"
+          onclick="fetchDynamic( document.getElementById('qr-string').value.trim() );"
+          disabled
+          placeholder="Fetch and unwrap signed payload"
+        >
+          Fetch URL
+        </button>
       </div>
+      <div class="columns">
+        <div class="column">
+          <label for="decoded">Decoded QR</label>
+          <textarea
+            id="decoded"
+            style="
+              width: 100%;
+              height: 500px;
+              font-family: 'Courier New';
+              font-size: 16px;
+              font-weight: 800;
+            "
+          >
+          </textarea>
+        </div>
       </div>
     </section>
     <div class="columns container">
       <div class="column is-one-third">(c) Sean Wykes 2020</div>
       <div class="column is-one-third">https://nascent.com.br</div>
-      <div class="column is-one-third">https://github.com/NascentSecureTech/pix-qrcode-utils</div>
+      <div class="column is-one-third">
+        https://github.com/NascentSecureTech/pix-qrcode-utils
+      </div>
     </div>
   </body>
   <script type="module">
-    import { decodeCode, fixCRC, fetchDynamic } from "/js/pix-qrcode-wrapper.js";
+    import {
+      decodeCode,
+      createCode,
+      fixCRC,
+      fetchDynamic,
+    } from "/js/pix-qrcode-wrapper.js";
 
     window.decodeCode = decodeCode;
+    window.createCode = createCode;
     window.fixCRC = fixCRC;
     window.fetchDynamic = fetchDynamic;
-
   </script>
   <script nomodule>
-    alert( 'This browser DOES NOT support modern javascript modules\nTry chrome or firefox');
+    alert(
+      "This browser DOES NOT support modern javascript modules\nTry chrome or firefox"
+    );
   </script>
 
   <script>
-	  document.addEventListener('DOMContentLoaded', ()=> { decodeCode( document.getElementById('qr-string').value.trim() ) }, false);
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        decodeCode(document.getElementById("qr-string").value.trim());
+      },
+      false
+    );
   </script>
 </html>

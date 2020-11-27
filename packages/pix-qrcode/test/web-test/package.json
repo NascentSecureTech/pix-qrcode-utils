@@ -1,0 +1,13 @@
+{
+  "name": "pix-qrcode-web-test",
+  "type": "module",
+
+  "scripts": {
+    "bundle": "deno bundle src/pix-qrcode-wrapper.ts js/pix-qrcode-wrapper.js"
+  },
+
+  "devDependencies": {
+    "typescript": "^4.0.2",
+    "typescript-deno-plugin": "^1.31.0"
+  }
+}

@@ -1,4 +1,4 @@
-class PIX2 {
+class PIX {
     static GUI = 'br.gov.bcb.pix';
     static TAG_MAI_CHAVE = 1;
     static TAG_MAI_INFOS = 2;
@@ -7,6 +7,7 @@ class PIX2 {
 const defaultParams = {
     encoding: 'utf8'
 };
+const PIX1 = PIX;
 function numToHex(n, digits) {
     let hex = n.toString(16).toUpperCase();
     if (digits) {
@@ -116,206 +117,6 @@ class RuleValidator {
             }, observer, true);
         }
         return this.result;
-    }
-}
-var PIXQRErrorCode2;
-(function(PIXQRErrorCode1) {
-    PIXQRErrorCode1[PIXQRErrorCode1["OK"] = 0] = "OK";
-    PIXQRErrorCode1[PIXQRErrorCode1["INVALID_QRCODE"] = 1] = "INVALID_QRCODE";
-    PIXQRErrorCode1[PIXQRErrorCode1["CRC_MISMATCH"] = 2] = "CRC_MISMATCH";
-    PIXQRErrorCode1[PIXQRErrorCode1["MISSING_MANDATORY_ELEMENT"] = 3] = "MISSING_MANDATORY_ELEMENT";
-    PIXQRErrorCode1[PIXQRErrorCode1["MISSING_PIX_MAI"] = 4] = "MISSING_PIX_MAI";
-    PIXQRErrorCode1[PIXQRErrorCode1["PIX_MAI_INVALID"] = 5] = "PIX_MAI_INVALID";
-    PIXQRErrorCode1[PIXQRErrorCode1["DUPLICATE_PIX_MAI"] = 6] = "DUPLICATE_PIX_MAI";
-})(PIXQRErrorCode2 || (PIXQRErrorCode2 = {
-}));
-class PIXQRCodeError2 extends ValidationError {
-    constructor(errorCode1, message1){
-        super(errorCode1, message1);
-        this.errorCode = errorCode1;
-        this.errorName = "PIXQR-" + PIXQRErrorCode2[errorCode1];
-    }
-}
-function addStaticRules(v) {
-    v.addRule({
-        id: "pix-static-txid",
-        when: (pix)=>pix.isPIX("static")
-        ,
-        description: "Contains a PIX Merchant Account Information",
-        rule: (_pix)=>{
-        }
-    });
-}
-function addDynamicRules(v) {
-    v.addRule({
-        id: "pix-dynamic-txid",
-        when: (pix)=>pix.isPIX("dynamic")
-        ,
-        description: "Correct URL coded in dynamic PIX",
-        rule: (pix)=>{
-            const url = pix.getMAI().getElement(PIX2.TAG_MAI_URL);
-            if (url && url.content.startsWith("http")) throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "URL must not contain protocol (https://)");
-        }
-    });
-}
-function getRuleValidator() {
-    let v = RuleValidator.get({
-        id: "PIXQR"
-    }).addRule({
-        id: "pix-mai",
-        description: "Contains a PIX Merchant Account Information",
-        rule: (pix)=>{
-            let maiList = pix.emvQRCode.findIdentifiedTemplate(PIX2.GUI, 26, 51);
-            if (maiList.length == 0) {
-                throw new PIXQRCodeError2(PIXQRErrorCode2.MISSING_PIX_MAI, "PIX MAI not found");
-            }
-            if (maiList.length > 1) {
-                throw new PIXQRCodeError2(PIXQRErrorCode2.DUPLICATE_PIX_MAI, "PIX MAI duplicated");
-            }
-        }
-    }).addRule({
-        id: "pix-static-or-dynamic",
-        description: "Contains a PIX Merchant Account Information",
-        rule: (pix)=>{
-            let pixMAI = pix.emvQRCode.findIdentifiedTemplate(PIX2.GUI, 26, 51)[0];
-            let pixStatic = pixMAI.hasElement(PIX2.TAG_MAI_CHAVE);
-            if (pixStatic) {
-                if (pixMAI.hasElement(PIX2.TAG_MAI_URL)) {
-                    throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "PIX MAI contains both CHAVE and URL elements");
-                }
-            } else {
-                if (!pixMAI.hasElement(PIX2.TAG_MAI_URL)) {
-                    throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements");
-                }
-            }
-        }
-    });
-    addStaticRules(v);
-    addDynamicRules(v);
-    return v;
-}
-function getLengths(b64) {
-    const len = b64.length;
-    let validLen = b64.indexOf("=");
-    if (validLen === -1) {
-        validLen = len;
-    }
-    const placeHoldersLen = validLen === len ? 0 : 4 - validLen % 4;
-    return [
-        validLen,
-        placeHoldersLen
-    ];
-}
-function init(lookup, revLookup, urlsafe = false) {
-    function _byteLength(validLen, placeHoldersLen) {
-        return Math.floor((validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen);
-    }
-    function tripletToBase64(num) {
-        return lookup[num >> 18 & 63] + lookup[num >> 12 & 63] + lookup[num >> 6 & 63] + lookup[num & 63];
-    }
-    function encodeChunk(buf, start, end) {
-        const out = new Array((end - start) / 3);
-        for(let i = start, curTriplet = 0; i < end; i += 3){
-            out[curTriplet++] = tripletToBase64((buf[i] << 16) + (buf[i + 1] << 8) + buf[i + 2]);
-        }
-        return out.join("");
-    }
-    return {
-        byteLength (b64) {
-            return _byteLength.apply(null, getLengths(b64));
-        },
-        toUint8Array (b64) {
-            const [validLen, placeHoldersLen] = getLengths(b64);
-            const buf = new Uint8Array(_byteLength(validLen, placeHoldersLen));
-            const len = placeHoldersLen ? validLen - 4 : validLen;
-            let tmp;
-            let curByte = 0;
-            let i;
-            for(i = 0; i < len; i += 4){
-                tmp = revLookup[b64.charCodeAt(i)] << 18 | revLookup[b64.charCodeAt(i + 1)] << 12 | revLookup[b64.charCodeAt(i + 2)] << 6 | revLookup[b64.charCodeAt(i + 3)];
-                buf[curByte++] = tmp >> 16 & 255;
-                buf[curByte++] = tmp >> 8 & 255;
-                buf[curByte++] = tmp & 255;
-            }
-            if (placeHoldersLen === 2) {
-                tmp = revLookup[b64.charCodeAt(i)] << 2 | revLookup[b64.charCodeAt(i + 1)] >> 4;
-                buf[curByte++] = tmp & 255;
-            } else if (placeHoldersLen === 1) {
-                tmp = revLookup[b64.charCodeAt(i)] << 10 | revLookup[b64.charCodeAt(i + 1)] << 4 | revLookup[b64.charCodeAt(i + 2)] >> 2;
-                buf[curByte++] = tmp >> 8 & 255;
-                buf[curByte++] = tmp & 255;
-            }
-            return buf;
-        },
-        fromUint8Array (buf) {
-            const maxChunkLength = 16383;
-            const len = buf.length;
-            const extraBytes = len % 3;
-            const len2 = len - extraBytes;
-            const parts = new Array(Math.ceil(len2 / 16383) + (extraBytes ? 1 : 0));
-            let curChunk = 0;
-            let chunkEnd;
-            for(let i = 0; i < len2; i += 16383){
-                chunkEnd = i + 16383;
-                parts[curChunk++] = encodeChunk(buf, i, chunkEnd > len2 ? len2 : chunkEnd);
-            }
-            let tmp;
-            if (extraBytes === 1) {
-                tmp = buf[len2];
-                parts[curChunk] = lookup[tmp >> 2] + lookup[tmp << 4 & 63];
-                if (!urlsafe) parts[curChunk] += "==";
-            } else if (extraBytes === 2) {
-                tmp = buf[len2] << 8 | buf[len2 + 1] & 255;
-                parts[curChunk] = lookup[tmp >> 10] + lookup[tmp >> 4 & 63] + lookup[tmp << 2 & 63];
-                if (!urlsafe) parts[curChunk] += "=";
-            }
-            return parts.join("");
-        }
-    };
-}
-const lookup = [];
-const revLookup = [];
-const code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-for(let i = 0, l = code.length; i < l; ++i){
-    lookup[i] = code[i];
-    revLookup[code.charCodeAt(i)] = i;
-}
-revLookup["-".charCodeAt(0)] = 62;
-revLookup["_".charCodeAt(0)] = 63;
-const { byteLength , toUint8Array , fromUint8Array  } = init(lookup, revLookup);
-class PIXPayloadRetriever2 {
-    constructor(){
-    }
-    async fetchPayload(url) {
-        const opts = {
-            accept: 'x/y',
-            mode: 'no-cors'
-        };
-        console.log("options", opts);
-        let pl = await fetch("https://" + url, opts).then((response)=>{
-            if (!response.ok) throw new Error("HTTP " + response.status);
-            return response.text();
-        }).then((jws)=>{
-            let parts = jws.split('.').map((b64)=>toUint8Array(b64)
-            );
-            let jsons = parts.map((u8)=>new TextDecoder().decode(u8)
-            );
-            let pixFetch = {
-                jwsString: jws,
-                jws: {
-                    hdr: parts[0],
-                    payload: parts[1],
-                    signature: parts[2]
-                },
-                header: JSON.parse(jsons[0]),
-                payload: JSON.parse(jsons[1])
-            };
-            return pixFetch;
-        }).catch((error)=>{
-            console.log(error);
-            throw error;
-        });
-        return pl;
     }
 }
 var QRErrorCode;
@@ -570,35 +371,209 @@ const rootScheme = {
 const defaultParams1 = {
     encoding: 'utf8'
 };
+var PIXQRErrorCode2;
+(function(PIXQRErrorCode1) {
+    PIXQRErrorCode1[PIXQRErrorCode1["OK"] = 0] = "OK";
+    PIXQRErrorCode1[PIXQRErrorCode1["INVALID_QRCODE"] = 1] = "INVALID_QRCODE";
+    PIXQRErrorCode1[PIXQRErrorCode1["CRC_MISMATCH"] = 2] = "CRC_MISMATCH";
+    PIXQRErrorCode1[PIXQRErrorCode1["MISSING_MANDATORY_ELEMENT"] = 3] = "MISSING_MANDATORY_ELEMENT";
+    PIXQRErrorCode1[PIXQRErrorCode1["MISSING_PIX_MAI"] = 4] = "MISSING_PIX_MAI";
+    PIXQRErrorCode1[PIXQRErrorCode1["PIX_MAI_INVALID"] = 5] = "PIX_MAI_INVALID";
+    PIXQRErrorCode1[PIXQRErrorCode1["DUPLICATE_PIX_MAI"] = 6] = "DUPLICATE_PIX_MAI";
+})(PIXQRErrorCode2 || (PIXQRErrorCode2 = {
+}));
+class PIXQRCodeError2 extends ValidationError {
+    constructor(errorCode1, message1){
+        super(errorCode1, message1);
+        this.errorCode = errorCode1;
+        this.errorName = "PIXQR-" + PIXQRErrorCode2[errorCode1];
+    }
+}
+function addStaticRules(v) {
+    v.addRule({
+        id: "pix-static-txid",
+        when: (pix)=>pix.isPIX("static")
+        ,
+        description: "Contains a PIX Merchant Account Information",
+        rule: (_pix)=>{
+        }
+    });
+}
+function addDynamicRules(v) {
+    v.addRule({
+        id: "pix-dynamic-txid",
+        when: (pix)=>pix.isPIX("dynamic")
+        ,
+        description: "Correct URL coded in dynamic PIX",
+        rule: (pix)=>{
+            const url = pix.getMAI().getElement(PIX.TAG_MAI_URL);
+            if (url && url.content.startsWith("http")) throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "URL must not contain protocol (https://)");
+        }
+    });
+}
+function getRuleValidator() {
+    let v = RuleValidator.get({
+        id: "PIXQR"
+    }).addRule({
+        id: "pix-mai",
+        description: "Contains a PIX Merchant Account Information",
+        rule: (pix)=>{
+            let maiList = pix.emvQRCode.findIdentifiedTemplate(PIX.GUI, 26, 51);
+            if (maiList.length == 0) {
+                throw new PIXQRCodeError2(PIXQRErrorCode2.MISSING_PIX_MAI, "PIX MAI not found");
+            }
+            if (maiList.length > 1) {
+                throw new PIXQRCodeError2(PIXQRErrorCode2.DUPLICATE_PIX_MAI, "PIX MAI duplicated");
+            }
+        }
+    }).addRule({
+        id: "pix-static-or-dynamic",
+        description: "Contains a PIX Merchant Account Information",
+        rule: (pix)=>{
+            let pixMAI = pix.emvQRCode.findIdentifiedTemplate(PIX.GUI, 26, 51)[0];
+            let pixStatic = pixMAI.hasElement(PIX.TAG_MAI_CHAVE);
+            if (pixStatic) {
+                if (pixMAI.hasElement(PIX.TAG_MAI_URL)) {
+                    throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "PIX MAI contains both CHAVE and URL elements");
+                }
+            } else {
+                if (!pixMAI.hasElement(PIX.TAG_MAI_URL)) {
+                    throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements");
+                }
+            }
+        }
+    });
+    addStaticRules(v);
+    addDynamicRules(v);
+    return v;
+}
 const PIXQRErrorCode1 = PIXQRErrorCode2;
 const PIXQRCodeError1 = PIXQRCodeError2;
-const PIX1 = PIX2;
-var document, QRious;
-function handleQRError(E) {
-    let result = "ERROR";
-    if (E instanceof PIXQRCodeError2) {
-        result = PIXQRErrorCode2[E.errorCode] + " - " + E.message;
-    } else if (E instanceof Error) {
-        result = "ERROR - " + E.message;
+function getLengths(b64) {
+    const len = b64.length;
+    let validLen = b64.indexOf("=");
+    if (validLen === -1) {
+        validLen = len;
     }
-    return result;
+    const placeHoldersLen = validLen === len ? 0 : 4 - validLen % 4;
+    return [
+        validLen,
+        placeHoldersLen
+    ];
 }
-function showResult(success, error) {
-    let el = document.getElementById('decoded');
-    el.classList.remove("has-background-danger");
-    el.classList.remove('has-text-secondary');
-    el.classList.remove('is-hidden');
-    if (error && error.length > 0) {
-        el.value = error;
-        el.classList.add("has-background-danger");
-        el.classList.add('has-text-secondary');
-    } else if (success && success.length > 0) {
-        el.value = success;
-    } else {
-        el.classList.add('is-hidden');
+function init(lookup, revLookup, urlsafe = false) {
+    function _byteLength(validLen, placeHoldersLen) {
+        return Math.floor((validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen);
+    }
+    function tripletToBase64(num) {
+        return lookup[num >> 18 & 63] + lookup[num >> 12 & 63] + lookup[num >> 6 & 63] + lookup[num & 63];
+    }
+    function encodeChunk(buf, start, end) {
+        const out = new Array((end - start) / 3);
+        for(let i = start, curTriplet = 0; i < end; i += 3){
+            out[curTriplet++] = tripletToBase64((buf[i] << 16) + (buf[i + 1] << 8) + buf[i + 2]);
+        }
+        return out.join("");
+    }
+    return {
+        byteLength (b64) {
+            return _byteLength.apply(null, getLengths(b64));
+        },
+        toUint8Array (b64) {
+            const [validLen, placeHoldersLen] = getLengths(b64);
+            const buf = new Uint8Array(_byteLength(validLen, placeHoldersLen));
+            const len = placeHoldersLen ? validLen - 4 : validLen;
+            let tmp;
+            let curByte = 0;
+            let i;
+            for(i = 0; i < len; i += 4){
+                tmp = revLookup[b64.charCodeAt(i)] << 18 | revLookup[b64.charCodeAt(i + 1)] << 12 | revLookup[b64.charCodeAt(i + 2)] << 6 | revLookup[b64.charCodeAt(i + 3)];
+                buf[curByte++] = tmp >> 16 & 255;
+                buf[curByte++] = tmp >> 8 & 255;
+                buf[curByte++] = tmp & 255;
+            }
+            if (placeHoldersLen === 2) {
+                tmp = revLookup[b64.charCodeAt(i)] << 2 | revLookup[b64.charCodeAt(i + 1)] >> 4;
+                buf[curByte++] = tmp & 255;
+            } else if (placeHoldersLen === 1) {
+                tmp = revLookup[b64.charCodeAt(i)] << 10 | revLookup[b64.charCodeAt(i + 1)] << 4 | revLookup[b64.charCodeAt(i + 2)] >> 2;
+                buf[curByte++] = tmp >> 8 & 255;
+                buf[curByte++] = tmp & 255;
+            }
+            return buf;
+        },
+        fromUint8Array (buf) {
+            const maxChunkLength = 16383;
+            const len = buf.length;
+            const extraBytes = len % 3;
+            const len2 = len - extraBytes;
+            const parts = new Array(Math.ceil(len2 / 16383) + (extraBytes ? 1 : 0));
+            let curChunk = 0;
+            let chunkEnd;
+            for(let i = 0; i < len2; i += 16383){
+                chunkEnd = i + 16383;
+                parts[curChunk++] = encodeChunk(buf, i, chunkEnd > len2 ? len2 : chunkEnd);
+            }
+            let tmp;
+            if (extraBytes === 1) {
+                tmp = buf[len2];
+                parts[curChunk] = lookup[tmp >> 2] + lookup[tmp << 4 & 63];
+                if (!urlsafe) parts[curChunk] += "==";
+            } else if (extraBytes === 2) {
+                tmp = buf[len2] << 8 | buf[len2 + 1] & 255;
+                parts[curChunk] = lookup[tmp >> 10] + lookup[tmp >> 4 & 63] + lookup[tmp << 2 & 63];
+                if (!urlsafe) parts[curChunk] += "=";
+            }
+            return parts.join("");
+        }
+    };
+}
+const lookup = [];
+const revLookup = [];
+const code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+for(let i = 0, l = code.length; i < l; ++i){
+    lookup[i] = code[i];
+    revLookup[code.charCodeAt(i)] = i;
+}
+revLookup["-".charCodeAt(0)] = 62;
+revLookup["_".charCodeAt(0)] = 63;
+const { byteLength , toUint8Array , fromUint8Array  } = init(lookup, revLookup);
+export class PIXPayloadRetriever {
+    constructor(){
+    }
+    async fetchPayload(url) {
+        const opts = {
+            accept: 'x/y',
+            mode: 'no-cors'
+        };
+        console.log("options", opts);
+        let pl = await fetch("https://" + url, opts).then((response)=>{
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            return response.text();
+        }).then((jws)=>{
+            let parts = jws.split('.').map((b64)=>toUint8Array(b64)
+            );
+            let jsons = parts.map((u8)=>new TextDecoder().decode(u8)
+            );
+            let pixFetch = {
+                jwsString: jws,
+                jws: {
+                    hdr: parts[0],
+                    payload: parts[1],
+                    signature: parts[2]
+                },
+                header: JSON.parse(jsons[0]),
+                payload: JSON.parse(jsons[1])
+            };
+            return pixFetch;
+        }).catch((error)=>{
+            console.log(error);
+            throw error;
+        });
+        return pl;
     }
 }
-let $qrImage;
+export { PIXQRCodeError1 as PIXQRCodeError, PIXQRErrorCode1 as PIXQRErrorCode };
 class QRCodeError extends ValidationError {
     constructor(errorCode2, message2){
         super(errorCode2, message2);
@@ -640,144 +615,6 @@ function validateNode(node, schema, path = "") {
             let elementPath = path + (path.length ? ":" : "") + ("00" + element.tag).slice(-2);
             validateNode(element, nodeScheme, elementPath);
         });
-    }
-}
-class QRCodeNode {
-    isType(type) {
-        return this.type == type;
-    }
-    isTemplate() {
-        return this.isType('template') || this.isType('identified-template');
-    }
-    get content() {
-        return this._content;
-    }
-    set content(content) {
-        this._content = content;
-    }
-    constructor(type1, content1, tag1, baseOffset1 = 0){
-        this.type = type1;
-        this.baseOffset = baseOffset1;
-        this.tag = tag1;
-        this._content = content1;
-        switch(type1){
-            case "root":
-            case "template":
-                this.elements = this.parseElementSequence(content1, baseOffset1);
-                break;
-            default:
-                this.elements = new Map();
-        }
-    }
-    parseElementSequence(sequence, baseOffset = 0) {
-        let elements = new Map();
-        let end = sequence.length;
-        let index = 0;
-        while(index + 4 < end){
-            let pos = baseOffset + index;
-            if (!/^\d{4}$/.test(sequence.substr(index, 4))) {
-                throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: invalid tag or length characters @ " + (1 + pos));
-            }
-            let tag1 = parseInt(sequence.substr(index, 2));
-            let len = parseInt(sequence.substr(index + 2, 2));
-            if (index + len + 4 > end) {
-                throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: invalid length @" + (1 + pos));
-            }
-            let content1 = sequence.substr(index + 2 + 2, len);
-            elements.set(tag1, new QRCodeNode('data', content1, tag1, pos));
-            index += 4 + len;
-        }
-        if (index != end) {
-            throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: extra characters at end @" + (1 + baseOffset + index));
-        }
-        return elements;
-    }
-    parseAsTemplate(isIdentified) {
-        if (!this.isTemplate()) {
-            this.elements = this.parseElementSequence(this.content, this.baseOffset);
-            this.type = isIdentified ? 'identified-template' : 'template';
-        }
-        return this;
-    }
-    hasElement(tag) {
-        return this.elements.has(tag);
-    }
-    getElement(tag) {
-        if (!this.elements.has(tag)) return new QRCodeNode("void", "", tag);
-        return this.elements.get(tag);
-    }
-    newDataElement(tag, content) {
-        let node = new QRCodeNode("data", content, tag);
-        this.elements.set(tag, node);
-        return node;
-    }
-    newTemplateElement(tag, lastTag, isIdentified = false, nodes) {
-        if (!lastTag) lastTag = tag;
-        while(tag <= lastTag){
-            if (!this.hasElement(tag)) {
-                let node = new QRCodeNode(isIdentified ? "identified-template" : "template", "", tag);
-                if (nodes) {
-                    for (const child of nodes)node.elements.set(child.tag, child);
-                }
-                this.elements.set(tag, node);
-            }
-            ++tag;
-        }
-        throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, "Unable to insert template");
-    }
-    deleteElement(tag) {
-        this.elements.delete(tag);
-    }
-    toJSON() {
-        let json = {
-            type: this.type,
-            tag: this.tag ?? undefined,
-            content: this.content,
-            elements: !this.isType("data") ? Array.from(this.elements.values()).map((value)=>value.toJSON()
-            ) : undefined
-        };
-        return json;
-    }
-    ensureDataElement(tag, defaultContent = "") {
-        return this.hasElement(tag) ? this.getElement(tag) : this.newDataElement(tag, defaultContent);
-    }
-    buildTagLength() {
-        let ts = ("00" + this.tag.toString()).slice(-2);
-        let len = ("00" + this.content.length.toString()).slice(-2);
-        return ts + len;
-    }
-    buildQRString(offset = 0) {
-        const isRoot = this.isType("root");
-        this.baseOffset = offset;
-        if (!isRoot) offset += 2 + 2;
-        if (!this.isType("data")) {
-            let qrs = [];
-            this.elements.forEach((element)=>{
-                if (!isRoot || !valueIn([
-                    EMVQR.TAG_INIT,
-                    EMVQR.TAG_CRC
-                ], element.tag)) {
-                    let els = element.buildQRString(offset);
-                    qrs.push(els);
-                    offset += els.length;
-                }
-            });
-            this._content = qrs.join("");
-        }
-        let content2 = this._content;
-        if (!isRoot) {
-            content2 = this.buildTagLength() + content2;
-        }
-        return content2;
-    }
-    findIdentifiedTemplate(id, first = 0, last = EMVQR.TAG_MAX) {
-        let found = [];
-        this.elements.forEach((element)=>{
-            if (element.isType('identified-template') && element.tag >= first && element.tag <= last && element.hasElement(EMVQR.TAG_TEMPLATE_GUI) && element.getElement(EMVQR.TAG_TEMPLATE_GUI).content.toUpperCase() == id.toUpperCase()) {
-                found.push(element);
-            }
-        });
-        return found;
     }
 }
 function computeCRC(str, invert = false) {
@@ -1051,11 +888,6 @@ function computeCRC(str, invert = false) {
     if (invert) return hex.slice(2) + hex.slice(0, 2);
     return hex;
 }
-function convertCode(qrCode, _encoding) {
-    if (_encoding && _encoding != 'utf8') throw new QRCodeError(QRErrorCode.INVALID_PARAM, "encoding must be 'utf8'");
-    return qrCode ?? '';
-}
-const PIXPayloadRetriever1 = PIXPayloadRetriever2;
 function getRuleValidator1() {
     return RuleValidator.get({
         id: "EMVQR"
@@ -1103,8 +935,8 @@ function getRuleValidator1() {
         id: "mandatory-elements",
         description: "Contains EMV mandatory elements",
         rule: (root, _val)=>{
-            mandatoryElements.forEach((tag2)=>{
-                if (!root.hasElement(tag2)) throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, "Missing mandatory tag (" + tag2 + ")");
+            mandatoryElements.forEach((tag)=>{
+                if (!root.hasElement(tag)) throw new QRCodeError(QRErrorCode.MISSING_MANDATORY_ELEMENT, "Missing mandatory tag (" + tag + ")");
             });
         }
     }).addRule({
@@ -1114,6 +946,155 @@ function getRuleValidator1() {
             validateNode(root, rootScheme);
         }
     });
+}
+class QRCodeNode {
+    isType(type) {
+        return this.type == type;
+    }
+    isTemplate() {
+        return this.isType('template') || this.isType('identified-template');
+    }
+    get content() {
+        return this._content;
+    }
+    set content(content) {
+        this._content = content;
+    }
+    constructor(type1, content1, tag1, baseOffset1 = 0){
+        this.type = type1;
+        this.baseOffset = baseOffset1;
+        this.tag = tag1;
+        this._content = content1;
+        switch(type1){
+            case "root":
+            case "template":
+                this.elements = this.parseElementSequence(content1, baseOffset1);
+                break;
+            default:
+                this.elements = new Map();
+        }
+    }
+    parseElementSequence(sequence, baseOffset = 0) {
+        let elements = new Map();
+        let end = sequence.length;
+        let index = 0;
+        while(index + 4 < end){
+            let pos = baseOffset + index;
+            if (!/^\d{4}$/.test(sequence.substr(index, 4))) {
+                throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: invalid tag or length characters @ " + (1 + pos));
+            }
+            let tag1 = parseInt(sequence.substr(index, 2));
+            let len = parseInt(sequence.substr(index + 2, 2));
+            if (index + len + 4 > end) {
+                throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: invalid length @" + (1 + pos));
+            }
+            let content1 = sequence.substr(index + 2 + 2, len);
+            elements.set(tag1, new QRCodeNode('data', content1, tag1, pos));
+            index += 4 + len;
+        }
+        if (index != end) {
+            throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "Error parsing qrcode string: extra characters at end @" + (1 + baseOffset + index));
+        }
+        return elements;
+    }
+    parseAsTemplate(isIdentified) {
+        if (!this.isTemplate()) {
+            this.elements = this.parseElementSequence(this.content, this.baseOffset);
+            this.type = isIdentified ? 'identified-template' : 'template';
+        }
+        return this;
+    }
+    hasElement(tag) {
+        return this.elements.has(tag);
+    }
+    getElement(tag) {
+        if (!this.elements.has(tag)) return new QRCodeNode("void", "", tag);
+        return this.elements.get(tag);
+    }
+    newDataElement(tag, content) {
+        let node = new QRCodeNode("data", content, tag);
+        this.elements.set(tag, node);
+        return node;
+    }
+    newTemplateElement(tag, lastTag, isIdentified = false, nodes) {
+        if (!lastTag) lastTag = tag;
+        while(tag <= lastTag){
+            if (!this.hasElement(tag)) {
+                let node = new QRCodeNode(isIdentified ? "identified-template" : "template", "", tag);
+                if (nodes) {
+                    for (const child of nodes)node.elements.set(child.tag, child);
+                }
+                this.elements.set(tag, node);
+                return node;
+            }
+            ++tag;
+        }
+        throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, "Unable to insert template");
+    }
+    deleteElement(tag) {
+        this.elements.delete(tag);
+    }
+    toJSON() {
+        let json = {
+            type: this.type,
+            tag: this.tag ?? undefined,
+            content: this.content,
+            elements: !this.isType("data") ? Array.from(this.elements.values()).map((value)=>value.toJSON()
+            ) : undefined
+        };
+        return json;
+    }
+    ensureDataElement(tag, defaultContent = "") {
+        return this.hasElement(tag) ? this.getElement(tag) : this.newDataElement(tag, defaultContent);
+    }
+    buildTagLength() {
+        let ts = ("00" + this.tag.toString()).slice(-2);
+        let len = ("00" + this.content.length.toString()).slice(-2);
+        return ts + len;
+    }
+    buildQRString(offset = 0) {
+        const isRoot = this.isType("root");
+        if (isRoot) {
+            this.elements = new Map([
+                ...this.elements
+            ].sort((a, b)=>a[0] > b[0] ? 1 : -1
+            ));
+        }
+        this.baseOffset = offset;
+        if (!isRoot) offset += 2 + 2;
+        if (!this.isType("data")) {
+            let qrs = [];
+            this.elements.forEach((element)=>{
+                if (!isRoot || !valueIn([
+                    EMVQR.TAG_INIT,
+                    EMVQR.TAG_CRC
+                ], element.tag)) {
+                    let els = element.buildQRString(offset);
+                    qrs.push(els);
+                    offset += els.length;
+                }
+            });
+            this._content = qrs.join("");
+        }
+        let content2 = this._content;
+        if (!isRoot) {
+            content2 = this.buildTagLength() + content2;
+        }
+        return content2;
+    }
+    findIdentifiedTemplate(id, first = 0, last = EMVQR.TAG_MAX) {
+        let found = [];
+        this.elements.forEach((element)=>{
+            if (element.isType('identified-template') && element.tag >= first && element.tag <= last && element.hasElement(EMVQR.TAG_TEMPLATE_GUI) && element.getElement(EMVQR.TAG_TEMPLATE_GUI).content.toUpperCase() == id.toUpperCase()) {
+                found.push(element);
+            }
+        });
+        return found;
+    }
+}
+function convertCode(qrCode, _encoding) {
+    if (_encoding && _encoding != 'utf8') throw new QRCodeError(QRErrorCode.INVALID_PARAM, "encoding must be 'utf8'");
+    return qrCode ?? '';
 }
 class EMVMerchantQRCode extends QRCodeNode {
     type = "root";
@@ -1127,7 +1108,7 @@ class EMVMerchantQRCode extends QRCodeNode {
             root.newDataElement(53, ("000" + basicElements.transactionCurrency).slice(-3));
             root.newDataElement(58, basicElements.countryCode);
             root.newDataElement(59, basicElements.merchantCity);
-            root.newDataElement(70, basicElements.merchantName);
+            root.newDataElement(60, basicElements.merchantName);
             if (basicElements.oneTime) root.newDataElement(2, "12");
             if (basicElements.transactionAmount) root.newDataElement(54, basicElements.transactionAmount.toFixed(2));
         }
@@ -1192,33 +1173,33 @@ class EMVMerchantQRCode extends QRCodeNode {
         return dumpNode(this, rootScheme, "");
     }
 }
-class PIXQRCode2 {
+class PIXQRCode {
     get emvQRCode() {
         return this._emvQRCode;
     }
     getMAI() {
-        let maiList = this.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
+        let maiList = this.emvQRCode.findIdentifiedTemplate(PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
         return maiList[0];
     }
     constructor(emvQRCode){
         this._emvQRCode = emvQRCode;
     }
     static createCode(elements) {
-        let pixQRCode = new PIXQRCode2(EMVMerchantQRCode.createCode(elements));
+        let pixQRCode = new PIXQRCode(EMVMerchantQRCode.createCode(elements));
         let emvQRCode1 = pixQRCode.emvQRCode;
-        let guiNode = new QRCodeNode('data', PIX2.GUI, EMVQR.TAG_TEMPLATE_GUI);
+        let guiNode = new QRCodeNode('data', PIX.GUI, EMVQR.TAG_TEMPLATE_GUI);
         const maiPIX = emvQRCode1.newTemplateElement(EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST, true, [
             guiNode
         ]);
         if (elements.type == "static") {
-            if (elements.chave) maiPIX.newDataElement(PIX2.TAG_MAI_CHAVE, elements.chave);
-            if (elements.infoAdicional) maiPIX.newDataElement(PIX2.TAG_MAI_INFOS, elements.infoAdicional);
+            if (elements.chave) maiPIX.newDataElement(PIX.TAG_MAI_CHAVE, elements.chave);
+            if (elements.infoAdicional) maiPIX.newDataElement(PIX.TAG_MAI_INFOS, elements.infoAdicional);
             if (elements.txid) {
                 let el62 = emvQRCode1.newTemplateElement(EMVQR.TAG_ADDITIONAL_DATA);
                 el62.newDataElement(EMVQR.TAG_AD_REF_LABEL, elements.txid);
             }
         } else {
-            if (elements.url) maiPIX.newDataElement(PIX2.TAG_MAI_URL, elements.url);
+            if (elements.url) maiPIX.newDataElement(PIX.TAG_MAI_URL, elements.url);
         }
         return pixQRCode;
     }
@@ -1227,19 +1208,19 @@ class PIXQRCode2 {
             ...defaultParams,
             ...params
         };
-        let pixQRCode = new PIXQRCode2(EMVMerchantQRCode.parseCode(qrCode, params));
+        let pixQRCode = new PIXQRCode(EMVMerchantQRCode.parseCode(qrCode, params));
         return pixQRCode;
     }
     async validateCode(observer) {
         return await getRuleValidator().validate(this, observer);
     }
     isPIX(test) {
-        let maiList = this.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
+        let maiList = this.emvQRCode.findIdentifiedTemplate(PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
         let hasPIX = maiList.length == 1;
         if (!hasPIX) return false;
         let pixMAI = maiList[0];
-        let isStatic = pixMAI.hasElement(PIX2.TAG_MAI_CHAVE);
-        let isDynamic = pixMAI.hasElement(PIX2.TAG_MAI_URL);
+        let isStatic = pixMAI.hasElement(PIX.TAG_MAI_CHAVE);
+        let isDynamic = pixMAI.hasElement(PIX.TAG_MAI_URL);
         switch(test){
             case "pix":
                 return true;
@@ -1252,59 +1233,5 @@ class PIXQRCode2 {
         }
     }
 }
-const PIXQRCode1 = PIXQRCode2;
-export { PIX1 as PIX, PIXQRCode1 as PIXQRCode, PIXQRErrorCode1 as PIXQRErrorCode, PIXQRCodeError1 as PIXQRCodeError, PIXPayloadRetriever1 as PIXPayloadRetriever };
-export async function decodeCode(value) {
-    let qr;
-    if (value.length) {
-        try {
-            qr = PIXQRCode2.parseCode(value);
-            await qr.validateCode();
-            showResult(qr.emvQRCode.dumpCode());
-            let $fetch = document.getElementById('btn-fetch-dynamic');
-            $fetch.disabled = !qr.isPIX('dynamic');
-            $qrImage = document.getElementById('qr-bitmap');
-            new QRious({
-                element: $qrImage,
-                value: value,
-                size: 200
-            });
-        } catch (E) {
-            showResult(null, handleQRError(E));
-            if ($qrImage) $qrImage.src = '#';
-        }
-    } else {
-        showResult();
-        if ($qrImage) $qrImage.src = '#';
-    }
-}
-export async function fetchDynamic(value) {
-    let pix = PIXQRCode2.parseCode(value);
-    console.log(pix);
-    await pix.validateCode();
-    let tmpl = pix.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST)[0];
-    let url = tmpl.getElement(PIX2.TAG_MAI_URL).content;
-    console.log(url);
-    url = "pix.nascent.com.br/proxy?url=" + encodeURI("https://" + url);
-    let payload = new PIXPayloadRetriever2().fetchPayload(url);
-    payload.then((results)=>{
-        let json = {
-            "$hdr": results.header,
-            ...results.payload
-        };
-        showResult(JSON.stringify(json, null, 2));
-    }).catch((e)=>{
-        console.log("Fetch failed: " + e.message);
-    });
-}
-export function fixCRC(value) {
-    let $qr = document.getElementById('qr-string');
-    try {
-        let qr = PIXQRCode2.parseCode(value);
-        value = qr.emvQRCode.buildQRString();
-        $qr.value = value;
-        decodeCode(value);
-    } catch (E) {
-        showResult(null, handleQRError(E));
-    }
-}
+const PIXQRCode1 = PIXQRCode;
+export { PIX1 as PIX, PIXQRCode1 as PIXQRCode };

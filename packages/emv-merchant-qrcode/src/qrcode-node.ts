@@ -132,6 +132,8 @@ export class QRCodeNode {
         }
 
         this.elements.set( tag, node );
+
+        return node;
       }
 
       ++tag;
@@ -169,6 +171,11 @@ export class QRCodeNode {
 
   buildQRString( offset: number = 0 ): string {
     const isRoot = this.isType( "root" );
+
+    if ( isRoot ) {
+      // reorder elements by tag
+      this.elements = new Map([...this.elements].sort((a, b) => a[0] > b[0] ? 1 : -1))
+    }
 
     this.baseOffset = offset;
 
