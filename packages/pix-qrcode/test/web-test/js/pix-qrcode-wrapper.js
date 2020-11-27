@@ -177,7 +177,7 @@ function getRuleValidator() {
         id: "pix-static-or-dynamic",
         description: "Contains a PIX Merchant Account Information",
         rule: (pix)=>{
-            let pixMAI = pix.emvQRCode.findIdentifiedTemplate(PIX2.GUI, 26, 51)[0];
+            let pixMAI = pix.getMAI();
             let pixStatic = pixMAI.hasElement(PIX2.TAG_MAI_CHAVE);
             if (pixStatic) {
                 if (pixMAI.hasElement(PIX2.TAG_MAI_URL)) {
@@ -185,7 +185,7 @@ function getRuleValidator() {
                 }
             } else {
                 if (!pixMAI.hasElement(PIX2.TAG_MAI_URL)) {
-                    throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements");
+                    throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "PIX MAI contains neither static or dynamic elements");
                 }
             }
         }
@@ -1242,10 +1242,8 @@ class PIXQRCode2 {
         return await getRuleValidator().validate(this, observer);
     }
     isPIX(test) {
-        let maiList = this.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
-        let hasPIX = maiList.length == 1;
-        if (!hasPIX) return false;
-        let pixMAI = maiList[0];
+        let pixMAI = this.getMAI();
+        if (!pixMAI) return false;
         let isStatic = pixMAI.hasElement(PIX2.TAG_MAI_CHAVE);
         let isDynamic = pixMAI.hasElement(PIX2.TAG_MAI_URL);
         switch(test){
@@ -1259,6 +1257,37 @@ class PIXQRCode2 {
                 return isDynamic;
         }
     }
+    extractElements() {
+        let emvQR = this.emvQRCode;
+        function getDataElement(tag2) {
+            if (emvQR.hasElement(tag2)) {
+                return emvQR.getElement(tag2).content;
+            }
+            return "";
+        }
+        let basicElements = {
+            merchantCategoryCode: getDataElement(52),
+            transactionCurrency: parseInt(getDataElement(53)),
+            transactionAmount: parseInt(getDataElement(54)),
+            countryCode: getDataElement(58),
+            merchantCity: getDataElement(59),
+            merchantName: getDataElement(60)
+        };
+        if (this.isPIX('static')) {
+            return {
+                type: 'static',
+                ...basicElements,
+                chave: this.getMAI()?.getElement(PIX2.TAG_MAI_CHAVE).content
+            };
+        } else if (this.isPIX('dynamic')) {
+            return {
+                type: 'dynamic',
+                ...basicElements,
+                url: this.getMAI()?.getElement(PIX2.TAG_MAI_URL).content
+            };
+        }
+        throw new PIXQRCodeError2(PIXQRErrorCode2.INVALID_QRCODE, "Unable to extract static/dynamic elements");
+    }
 }
 const PIXQRCode1 = PIXQRCode2;
 export { PIX1 as PIX, PIXQRCode1 as PIXQRCode, PIXQRErrorCode1 as PIXQRErrorCode, PIXQRCodeError1 as PIXQRCodeError, PIXPayloadRetriever1 as PIXPayloadRetriever };
@@ -1266,6 +1295,7 @@ export async function decodeCode(value) {
     let qr;
     if (value.length) {
         try {
+            showResult();
             qr = PIXQRCode2.parseCode(value);
             showResult(qr.emvQRCode.dumpCode());
             let r = await Promise.all([
@@ -1294,24 +1324,44 @@ export async function decodeCode(value) {
         if ($qrImage) $qrImage.src = '#';
     }
 }
+export async function extractCode(value) {
+    let qr;
+    if (value.length) {
+        try {
+            showResult();
+            qr = PIXQRCode2.parseCode(value);
+            const info = qr.extractElements();
+            showResult(JSON.stringify(info, null, 2));
+        } catch (E) {
+            showResult(null, handleQRError(E));
+            if ($qrImage) $qrImage.src = '#';
+        }
+    } else {
+        showResult();
+        if ($qrImage) $qrImage.src = '#';
+    }
+}
 export async function fetchDynamic(value) {
-    let pix = PIXQRCode2.parseCode(value);
-    console.log(pix);
-    await pix.validateCode();
-    let tmpl = pix.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST)[0];
-    let url = tmpl.getElement(PIX2.TAG_MAI_URL).content;
-    console.log(url);
-    url = "pix.nascent.com.br/proxy?url=" + encodeURI("https://" + url);
-    let payload = new PIXPayloadRetriever2().fetchPayload(url);
-    payload.then((results)=>{
-        let json = {
-            "$hdr": results.header,
-            ...results.payload
-        };
+    try {
+        let pix = PIXQRCode2.parseCode(value);
+        console.log(pix);
+        await pix.validateCode();
+        let tmpl = pix.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST)[0];
+        let url = tmpl.getElement(PIX2.TAG_MAI_URL).content;
+        console.log(url);
+        url = "pix.nascent.com.br/proxy?url=" + encodeURI("https://" + url);
+        let payload = new PIXPayloadRetriever2().fetchPayload(url);
+        let json = await payload.then((results)=>{
+            return {
+                "$hdr": results.header,
+                ...results.payload
+            };
+        });
         showResult(JSON.stringify(json, null, 2));
-    }).catch((e)=>{
+    } catch (e) {
+        showResult(null, e);
         console.log("Fetch failed: " + e.message);
-    });
+    }
 }
 export function fixCRC(value) {
     let $qr = document.getElementById('qr-string');

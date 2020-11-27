@@ -1,6 +1,6 @@
 import { ValidationObserver } from "./deps.ts";
 import { EMVMerchantQRCode, QRCodeNode, EMVMerchantQRParams, EMVQRCodeBasicElements, EMVQR } from "./deps.ts";
-import { getRuleValidator,  } from './pix-qrcode-validator.ts';
+import { getRuleValidator, PIXQRCodeError, PIXQRErrorCode } from './pix-qrcode-validator.ts';
 
 export class PIX {
   static GUI = 'br.gov.bcb.pix';
@@ -96,14 +96,10 @@ export class PIXQRCode {
     return await getRuleValidator( ).validate( this, observer );
   }
 
-  isPIX( test: "pix"|"valid"|"static"|"dynamic"): boolean {
-    let maiList = this.emvQRCode.findIdentifiedTemplate( PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST );
-
-    let hasPIX = ( maiList.length == 1 );
-    if ( !hasPIX )
+   isPIX( test: "pix"|"valid"|"static"|"dynamic"): boolean {
+    let pixMAI = this.getMAI();
+    if ( !pixMAI )
       return false;
-
-    let pixMAI = maiList[ 0 ];
 
     let isStatic = pixMAI.hasElement( PIX.TAG_MAI_CHAVE );
     let isDynamic = pixMAI.hasElement( PIX.TAG_MAI_URL );
@@ -114,5 +110,42 @@ export class PIXQRCode {
       case "static": return isStatic;
       case "dynamic": return isDynamic;
     }
+  }
+
+  extractElements(): PIXQRCodeElements {
+    let emvQR = this.emvQRCode
+    function getDataElement( tag: number ): string {
+      if ( emvQR.hasElement( tag ) ) {
+        return emvQR.getElement( tag ).content;
+      }
+
+      return "";
+    }
+
+    let basicElements: EMVQRCodeBasicElements = {
+      merchantCategoryCode: getDataElement( 52 ),
+      transactionCurrency: parseInt(getDataElement( 53 ) ),
+      transactionAmount: parseInt( getDataElement( 54 ) ),
+      countryCode: getDataElement( 58 ),
+      merchantCity: getDataElement( 59 ),
+      merchantName: getDataElement( 60 ),
+    }
+
+    if ( this.isPIX( 'static') ) {
+      return {
+        type: 'static',
+        ...basicElements,
+        chave: this.getMAI()?.getElement( PIX.TAG_MAI_CHAVE ).content,
+      }
+    }
+    else if( this.isPIX( 'dynamic') ) {
+      return {
+        type: 'dynamic',
+        ...basicElements,
+        url: this.getMAI()?.getElement( PIX.TAG_MAI_URL ).content,
+      }
+    }
+
+    throw new PIXQRCodeError( PIXQRErrorCode.INVALID_QRCODE, "Unable to extract static/dynamic elements" )
   }
 }

@@ -69,10 +69,10 @@ export function getRuleValidator( ): RuleValidator<PIXQRCode> {
       id: "pix-static-or-dynamic",
       description: "Contains a PIX Merchant Account Information",
       rule: ( pix ) => {
-        let pixMAI = pix.emvQRCode.findIdentifiedTemplate( PIX.GUI, 26, 51 )[ 0 ];
+        let pixMAI = pix.getMAI();
 
         // 3. PIX-MAI contents must indicate CHAVE or URL
-        let pixStatic = pixMAI.hasElement( PIX.TAG_MAI_CHAVE ); // DICT KEY
+        let pixStatic = pixMAI.hasElement( PIX.TAG_MAI_CHAVE );
 
         if( pixStatic ) {
           if ( pixMAI.hasElement( PIX.TAG_MAI_URL ) ) {
@@ -81,7 +81,7 @@ export function getRuleValidator( ): RuleValidator<PIXQRCode> {
         }
         else { // must be dynamic
           if ( !pixMAI.hasElement( PIX.TAG_MAI_URL ) ) {
-            throw new PIXQRCodeError( PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements")
+            throw new PIXQRCodeError( PIXQRErrorCode.PIX_MAI_INVALID, "PIX MAI contains neither static or dynamic elements")
           }
         }
       }

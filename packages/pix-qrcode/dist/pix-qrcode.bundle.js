@@ -430,7 +430,7 @@ function getRuleValidator() {
         id: "pix-static-or-dynamic",
         description: "Contains a PIX Merchant Account Information",
         rule: (pix)=>{
-            let pixMAI = pix.emvQRCode.findIdentifiedTemplate(PIX.GUI, 26, 51)[0];
+            let pixMAI = pix.getMAI();
             let pixStatic = pixMAI.hasElement(PIX.TAG_MAI_CHAVE);
             if (pixStatic) {
                 if (pixMAI.hasElement(PIX.TAG_MAI_URL)) {
@@ -438,7 +438,7 @@ function getRuleValidator() {
                 }
             } else {
                 if (!pixMAI.hasElement(PIX.TAG_MAI_URL)) {
-                    throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "PIX MAI contains neither static ou dynamic elements");
+                    throw new PIXQRCodeError2(PIXQRErrorCode2.PIX_MAI_INVALID, "PIX MAI contains neither static or dynamic elements");
                 }
             }
         }
@@ -1215,10 +1215,8 @@ class PIXQRCode {
         return await getRuleValidator().validate(this, observer);
     }
     isPIX(test) {
-        let maiList = this.emvQRCode.findIdentifiedTemplate(PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
-        let hasPIX = maiList.length == 1;
-        if (!hasPIX) return false;
-        let pixMAI = maiList[0];
+        let pixMAI = this.getMAI();
+        if (!pixMAI) return false;
         let isStatic = pixMAI.hasElement(PIX.TAG_MAI_CHAVE);
         let isDynamic = pixMAI.hasElement(PIX.TAG_MAI_URL);
         switch(test){
@@ -1231,6 +1229,37 @@ class PIXQRCode {
             case "dynamic":
                 return isDynamic;
         }
+    }
+    extractElements() {
+        let emvQR = this.emvQRCode;
+        function getDataElement(tag2) {
+            if (emvQR.hasElement(tag2)) {
+                return emvQR.getElement(tag2).content;
+            }
+            return "";
+        }
+        let basicElements = {
+            merchantCategoryCode: getDataElement(52),
+            transactionCurrency: parseInt(getDataElement(53)),
+            transactionAmount: parseInt(getDataElement(54)),
+            countryCode: getDataElement(58),
+            merchantCity: getDataElement(59),
+            merchantName: getDataElement(60)
+        };
+        if (this.isPIX('static')) {
+            return {
+                type: 'static',
+                ...basicElements,
+                chave: this.getMAI()?.getElement(PIX.TAG_MAI_CHAVE).content
+            };
+        } else if (this.isPIX('dynamic')) {
+            return {
+                type: 'dynamic',
+                ...basicElements,
+                url: this.getMAI()?.getElement(PIX.TAG_MAI_URL).content
+            };
+        }
+        throw new PIXQRCodeError2(PIXQRErrorCode2.INVALID_QRCODE, "Unable to extract static/dynamic elements");
     }
 }
 const PIXQRCode1 = PIXQRCode;

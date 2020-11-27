@@ -93,6 +93,8 @@ export async function decodeCode( value: string ) {
 
   if ( value.length ) {
     try {
+      showResult( );
+
       qr = PIXQRCode.parseCode( value );
 
       //showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
@@ -130,30 +132,57 @@ export async function decodeCode( value: string ) {
   }
 }
 
+export async function extractCode( value: string ) {
+  let qr;
+
+  if ( value.length ) {
+    try {
+      showResult( );
+
+      qr = PIXQRCode.parseCode( value );
+
+      const info = qr.extractElements();
+
+      showResult( JSON.stringify( info, null, 2 ) );
+    }
+    catch( E ) {
+      showResult( null, handleQRError( E ) );
+      if ( $qrImage ) $qrImage.src = '#';
+    }
+  }
+  else {
+    showResult();
+    if ( $qrImage ) $qrImage.src = '#';
+  }
+}
+
 export async function fetchDynamic( value: string ) {
-  let pix = PIXQRCode.parseCode( value );
+  try {
+    let pix = PIXQRCode.parseCode( value );
 
-  console.log( pix );
-  await pix.validateCode();
+    console.log( pix );
+    await pix.validateCode();
 
-  let tmpl = pix.emvQRCode.findIdentifiedTemplate( PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST )[ 0 ];
+    let tmpl = pix.emvQRCode.findIdentifiedTemplate( PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST )[ 0 ];
 
-  let url = tmpl.getElement(PIX.TAG_MAI_URL).content;
-  console.log( url );
+    let url = tmpl.getElement(PIX.TAG_MAI_URL).content;
+    console.log( url );
 
-  url = "pix.nascent.com.br/proxy?url=" + encodeURI( "https://" + url );
+    url = "pix.nascent.com.br/proxy?url=" + encodeURI( "https://" + url );
 
-  let payload = new PIXPayloadRetriever().fetchPayload( url );
+    let payload = new PIXPayloadRetriever().fetchPayload( url );
 
-  payload.then( results => {
-    let json = {
-     "$hdr": results.header,
-     ...results.payload
-    };
+    let json = await payload.then( results => {
+      return {
+       "$hdr": results.header,
+       ...results.payload
+       }
+     } );
 
-    showResult( JSON.stringify( json, null, 2 ) );
-  } )
-  .catch( (e) => {
+     showResult( JSON.stringify( json, null, 2 ) );
+  }
+  catch( e ) {
+    showResult( null, e );
     console.log( "Fetch failed: " + e.message );
-  } );
+  };
 }
