@@ -1,7 +1,7 @@
 class PIX {
     static GUI = 'br.gov.bcb.pix';
     static TAG_MAI_CHAVE = 1;
-    static TAG_MAI_INFOS = 2;
+    static TAG_MAI_INFO_ADD = 2;
     static TAG_MAI_URL = 25;
 }
 const defaultParams = {
@@ -1193,7 +1193,7 @@ class PIXQRCode {
         ]);
         if (elements.type == "static") {
             if (elements.chave) maiPIX.newDataElement(PIX.TAG_MAI_CHAVE, elements.chave);
-            if (elements.infoAdicional) maiPIX.newDataElement(PIX.TAG_MAI_INFOS, elements.infoAdicional);
+            if (elements.infoAdicional) maiPIX.newDataElement(PIX.TAG_MAI_INFO_ADD, elements.infoAdicional);
             if (elements.txid) {
                 let el62 = emvQRCode1.newTemplateElement(EMVQR.TAG_ADDITIONAL_DATA);
                 el62.newDataElement(EMVQR.TAG_AD_REF_LABEL, elements.txid);
@@ -1250,7 +1250,9 @@ class PIXQRCode {
             return {
                 type: 'static',
                 ...basicElements,
-                chave: this.getMAI()?.getElement(PIX.TAG_MAI_CHAVE).content
+                chave: this.getMAI()?.getElement(PIX.TAG_MAI_CHAVE).content,
+                infoAdicional: this.getMAI()?.getElement(PIX.TAG_MAI_INFO_ADD).content,
+                txid: emvQR.getElement(62)?.getElement(5)?.content
             };
         } else if (this.isPIX('dynamic')) {
             return {

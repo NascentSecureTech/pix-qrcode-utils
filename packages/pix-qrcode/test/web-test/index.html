@@ -76,7 +76,7 @@
         </button>
         <button
           class="button is-secondary"
-          onclick="createCode( );"
+          onclick="showPIXDialog( );"
           placeholder="New Dynamic"
         >
           Create PIX
@@ -123,100 +123,165 @@
       </div>
     </div>
 
-    <div id="qr-info-modal" class="modal xis-active">
+    <div id="qr-info-modal" class="modal no-is-active">
       <div class="modal-background"></div>
       <div class="modal-card">
         <header class="modal-card-head">
-          <span class="icon is-medium"
-            ><i
-              class="fas fa-2x fa-qrcode"
-              style="color: blue; margin-right: 16px;"
-              aria-hidden="true"
-            ></i
-          ></span>
+          <div class="modal-card-icon">
+            <span class="icon is-medium">
+              <i class="fas fa-2x fa-qrcode" style="color: blue; margin-right: 16px;" aria-hidden="true"></i>
+            </span>
+          </div>
           <p class="modal-card-title">Create PIX QRCode</p>
-          <button class="delete" aria-label="close"></button>
+          <button class="delete" aria-label="close" onclick="closePIXDialog( false )"></button>
         </header>
         <section class="modal-card-body">
-          <div class="tabs is-toggle is-large is-fullwidth">
+          <div class="tabs is-toggle is-medium is-fullwidth">
             <ul>
-              <li class="is-active" onclick="changeTab(0)">
-                <a>
-                  <span class="icon is-small"
-                    ><i class="fas fa-money-check-alt" aria-hidden="true"></i
-                  ></span>
-                  <span>Static</span>
-                </a>
-              </li>
-              <li onclick="changeTab(1)">
-                <a>
-                  <span class="icon is-small"
-                    ><i
-                      class="fas fa-file-invoice-dollar"
-                      aria-hidden="true"
-                    ></i
-                  ></span>
-                  <span>Dynamic</span>
-                </a>
-              </li>
-            </ul>
+            <li class="is-active" onclick="changeTab(0)">
+              <a>
+                <span class="icon is-small"
+                  ><i class="fas fa-money-check-alt" aria-hidden="true"></i
+                ></span>
+                <span>Static</span>
+              </a>
+            </li>
+            <li onclick="changeTab(1)">
+              <a>
+                <span class="icon is-small"
+                  ><i
+                    class="fas fa-file-invoice-dollar"
+                    aria-hidden="true"
+                  ></i
+                ></span>
+                <span>Dynamic</span>
+              </a>
+            </li>
+          </ul>
           </div>
-          <div class="container section">
+          <div class="container">
             <div class="content-tab">
-              <p>test1<br />
-                Overview Lorem Ipsum is simply dummy text of the printing and
-                typesetting industry. Lorem Ipsum has been the industry's
-                standard dummy text ever since the 1500s, when an unknown
-                printer took a galley of type and scrambled it to make a type
-                specimen book. It has survived not only five centuries, but also
-                the leap into electronic typesetting, remaining essentially
-                unchanged. It was popularised in the 1960s with the release of
-                Letraset sheets containing Lorem Ipsum passages, and more
-                recently with desktop publishing software like Aldus PageMaker
-                including versions of Lorem Ipsum.
-              </p>
+              <div class="field">
+                <label class="label">Chave</label>
+                <div class="control">
+                  <input id="pix-chave" class="input" type="text" placeholder="Chave no DICT">
+                </div>
+              </div>
+              <div class="field">
+                <label class="label">Nome</label>
+                <div class="control has-icons-left">
+                  <input id="pix-nome" class="input" type="text" placeholder="Nome">
+                  <span class="icon is-small is-left">
+                    <i class="fas fa-user"></i>
+                  </span>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label">TXID</label>
+                <div class="control">
+                  <input id="pix-txid" class="input" type="text" placeholder="TXID">
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="label">InfoAdicional</label>
+                <div class="control">
+                  <input id="pix-info-add" class="input" type="text" placeholder="Informações Adicionais">
+                </div>
+              </div>
+
             </div>
             <div class="content-tab is-hidden">
-              <p>test2<br />
-                Details Lorem Ipsum is simply dummy text of the printing and
-                typesetting industry. Lorem Ipsum has been the industry's
-                standard dummy text ever since the 1500s, when an unknown
-                printer took a galley of type and scrambled it to make a type
-                specimen book. It has survived not only five centuries, but also
-                the leap into electronic typesetting, remaining essentially
-                unchanged. It was popularised in the 1960s with the release of
-                Letraset sheets containing Lorem Ipsum passages, and more
-                recently with desktop publishing software like Aldus PageMaker
-                including versions of Lorem Ipsum.
-              </p>
-            </div>
-            <div class="content-tab is-hidden">
-              <p>
-                test3 <br />
-                Specification Lorem Ipsum is simply dummy text of the printing
-                and typesetting industry. Lorem Ipsum has been the industry's
-                standard dummy text ever since the 1500s, when an unknown
-                printer took a galley of type and scrambled it to make a type
-                specimen book. It has survived not only five centuries, but also
-                the leap into electronic typesetting, remaining essentially
-                unchanged. It was popularised in the 1960s with the release of
-                Letraset sheets containing Lorem Ipsum passages, and more
-                recently with desktop publishing software like Aldus PageMaker
-                including versions of Lorem Ipsum.
-              </p>
+              <div class="field">
+                <label class="label">url</label>
+                <div class="control">
+                  <input id="pix-url" class="input" type="text" placeholder="URL do Payload (sem https://)">
+                </div>
+              </div>
             </div>
           </div>
         </section>
         <footer class="modal-card-foot">
-          <button class="button is-success">Create QR</button>
-          <button class="button">Cancel</button>
+          <button class="button is-success" onclick="closePIXDialog(true)">Create QR</button>
+          <button class="button" onclick="closePIXDialog(false)">Cancel</button>
         </footer>
       </div>
     </div>
   </body>
 
-  <script defer>
-    function changeTab(t) {
+  <script type="module">
+    var tabIndex = 0;
+
+    function closePIXDialog( ok ) {
+      const $qrInfoModal = document.getElementById("qr-info-modal");
+
+      let qrInfo = {};
+
+      const defs = {
+        merchantCategoryCode: "0000",
+        transactionCurrency: 986,
+        countryCode: "BR",
+        merchantCity: "Porto Alegre",
+        merchantName: "PIX"
+      }
+
+      switch( tabIndex ) {
+        case 0: // static
+          qrInfo = {
+            type: "static",
+            ...defs,
+            chave: document.getElementById("pix-chave").value,
+            merchantName: document.getElementById("pix-nome").value,
+            txid: document.getElementById("pix-txid").value,
+            infoAdicional: document.getElementById("pix-info-add").value,
+          };
+          if ( ok && ( qrInfo.chave.length == 0 ) )
+            return;
+          break;
+
+
+        case 1: // dynamic
+          qrInfo = {
+            type: "dynamic",
+            ...defs,
+            url: document.getElementById("pix-url").value,
+          };
+          if ( ok && ( qrInfo.url.length == 0 ) )
+            return;
+          break;
+      }
+
+      if ( ok ) {
+        createCode( qrInfo );
+      }
+
+      $qrInfoModal.classList.remove("is-active");
+    }
+
+    function showPIXDialog( qrInfos ) {
+      const $qrInfoModal = document.getElementById("qr-info-modal");
+
+      if ( !qrInfos ) {
+        qrInfos = { type: "static" };
+      }
+
+      if ( qrInfos.type == "static" ) {
+        document.getElementById("pix-chave").value = qrInfos.chave??"";
+        document.getElementById("pix-nome").value = qrInfos.merchantName??"";
+        document.getElementById("pix-txid").value = qrInfos.txid??"";
+        document.getElementById("pix-info-add").value = qrInfos.infoAdicional??"";
+
+        changeTab( 0 );
+      }
+      else {
+        document.getElementById("pix-url").value = qrInfos.url??"";
+        changeTab( 1 );
+      }
+
+      $qrInfoModal.classList.add("is-active");
+    }
+
+    function changeTab(tab) {
       const $qrInfoModal = document.getElementById("qr-info-modal");
       const $tabs = $qrInfoModal.getElementsByClassName("tabs")[0];
 
@@ -226,13 +291,19 @@
       for (let $tab of $tabList) {
         $tab.classList.remove("is-active");
       }
-      $tabList[t].classList.add("is-active");
+      $tabList[tab].classList.add("is-active");
 
       for (let $tabContent of $tabContentList) {
         $tabContent.classList.add("is-hidden");
       }
-      $tabContentList[t].classList.remove("is-hidden");
+      $tabContentList[tab].classList.remove("is-hidden");
+
+      tabIndex = tab;
     }
+
+    window.changeTab = changeTab;
+    window.showPIXDialog = showPIXDialog;
+    window.closePIXDialog = closePIXDialog;
   </script>
 
   <script type="module">

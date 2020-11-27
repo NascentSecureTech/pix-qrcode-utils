@@ -2,7 +2,7 @@ import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, PIXQRCo
 
 export { PIX, PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever };
 
-var document = (window as any).document, QRious = (window as any).QRious, prompt = (window as any).prompt;
+var document = (window as any).document, QRious = (window as any).QRious; // , prompt = (window as any).prompt;
 
 function handleQRError( E: Error ) {
   let result = "ERROR";
@@ -23,6 +23,7 @@ function showResult( success?: string | null, error?: string ) {
 
   elStatus.classList.remove("has-background-danger");
   elStatus.classList.remove('has-text-secondary');
+  elStatus.classList.remove("has-background-info");
   elDecoded.classList.remove( 'is-hidden' );
 
   if ( error && error.length > 0 ) {
@@ -31,9 +32,12 @@ function showResult( success?: string | null, error?: string ) {
     elStatus.classList.add('has-text-secondary');
   }
   else if ( success && success.length > 0 ) {
+    elStatus.classList.add("has-background-info");
+    elStatus.value = 'SUCCESS';
     elDecoded.value = success;
   }
   else {
+    elStatus.value = '';
     elDecoded.classList.add( 'is-hidden' );
   }
 }
@@ -55,27 +59,9 @@ export function fixCRC( value: string ) {
   }
 }
 
-export function createCode( isDynamic: boolean = true ) {
-  const defs = {
-    merchantCategoryCode: "0000",
-    transactionCurrency: 986,
-    countryCode: "BR",
-    merchantCity: "Porto Alegre",
-    merchantName: "PIX"
-  }
+export function createCode( qrInfo: PIXQRCodeElements ) {
 
-  let elements: PIXQRCodeElements;
-
-  if ( isDynamic ) {
-    let url = prompt("Colar URL");
-
-    elements = { ...defs, type: "dynamic", url: url, };
-  } else {
-    let chave = prompt("Digitar chave")
-    elements = { ...defs, type: "static", chave: chave, };
-  }
-
-  let qr = PIXQRCode.createCode( elements );
+  let qr = PIXQRCode.createCode( qrInfo );
 
   let $qr = document.getElementById('qr-string');
 
@@ -132,7 +118,7 @@ export async function decodeCode( value: string ) {
   }
 }
 
-export async function extractCode( value: string ) {
+export async function extractCode( value: string ): Promise<PIXQRCodeElements | null> {
   let qr;
 
   if ( value.length ) {
@@ -141,19 +127,21 @@ export async function extractCode( value: string ) {
 
       qr = PIXQRCode.parseCode( value );
 
-      const info = qr.extractElements();
+      const info: PIXQRCodeElements = qr.extractElements();
 
       showResult( JSON.stringify( info, null, 2 ) );
+
+      return info;
     }
     catch( E ) {
       showResult( null, handleQRError( E ) );
-      if ( $qrImage ) $qrImage.src = '#';
     }
   }
   else {
     showResult();
-    if ( $qrImage ) $qrImage.src = '#';
   }
+
+  return null;
 }
 
 export async function fetchDynamic( value: string ) {
