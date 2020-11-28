@@ -6,6 +6,14 @@ export class EMVQR {
   static TAG_CRC = 63;
   static TAG_MAX = 99;
 
+  static TAG_MCC = 52;
+  static TAG_TRANSACTION_CURRENCY = 53;
+  static TAG_TRANSACTION_AMOUNT = 54;
+  static TAG_COUNTRY_CODE = 58;
+
+  static TAG_MERCHANT_NAME = 59;
+  static TAG_MERCHANT_CITY = 60;
+
   static MAI_TEMPLATE_FIRST = 26
   static MAI_TEMPLATE_LAST = 51
 

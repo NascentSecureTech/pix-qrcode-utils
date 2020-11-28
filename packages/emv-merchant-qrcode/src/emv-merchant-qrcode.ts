@@ -24,9 +24,9 @@ export interface EMVQRCodeMandatoryElements {
 
   countryCode: string;            // EL58
 
-  merchantCity: string;           // EL59
+  merchantName: string;           // EL59
 
-  merchantName: string;           // EL60
+  merchantCity: string;           // EL60
 }
 
 export interface EMVQRCodeBasicElements extends EMVQRCodeMandatoryElements {
@@ -34,7 +34,6 @@ export interface EMVQRCodeBasicElements extends EMVQRCodeMandatoryElements {
 
   transactionAmount?: number;     // EL54
 }
-
 
 function convertCode( qrCode?: string, _encoding?: 'utf8' |'base64' ): string {
   if ( _encoding && _encoding != 'utf8' )
@@ -58,21 +57,21 @@ export class EMVMerchantQRCode extends QRCodeNode {
     let root = new EMVMerchantQRCode( );
 
     if ( basicElements ) {
-      root.newDataElement( 52, basicElements.merchantCategoryCode );
+      root.newDataElement( EMVQR.TAG_MCC, basicElements.merchantCategoryCode );
 
-      root.newDataElement( 53, ("000" + basicElements.transactionCurrency).slice(-3) );
+      root.newDataElement( EMVQR.TAG_TRANSACTION_CURRENCY, ("000" + basicElements.transactionCurrency).slice(-3) );
 
-      root.newDataElement( 58, basicElements.countryCode );
+      root.newDataElement( EMVQR.TAG_COUNTRY_CODE, basicElements.countryCode );
 
-      root.newDataElement( 59, basicElements.merchantCity );
+      root.newDataElement( EMVQR.TAG_MERCHANT_NAME, basicElements.merchantName );
 
-      root.newDataElement( 60, basicElements.merchantName );
+      root.newDataElement( EMVQR.TAG_MERCHANT_CITY, basicElements.merchantCity );
 
       if ( basicElements.oneTime )
         root.newDataElement( 2, "12" );
 
       if ( basicElements.transactionAmount )
-        root.newDataElement( 54, basicElements.transactionAmount.toFixed(2) );
+        root.newDataElement( EMVQR.TAG_TRANSACTION_AMOUNT, basicElements.transactionAmount.toFixed(2) );
     }
 
     return root;
@@ -115,6 +114,30 @@ export class EMVMerchantQRCode extends QRCodeNode {
     return root;
   }
 
+  extractElements(): EMVQRCodeBasicElements {
+    let emvQR = this;
+    function getDataElement( tag: number ): string {
+      if ( emvQR.hasElement( tag ) ) {
+        return emvQR.getElement( tag ).content;
+      }
+
+      return "";
+    }
+
+    let basicElements: EMVQRCodeBasicElements = {
+      merchantCategoryCode: getDataElement( EMVQR.TAG_MCC ),
+      transactionCurrency: parseInt(getDataElement( EMVQR.TAG_TRANSACTION_CURRENCY ) ),
+      countryCode: getDataElement( EMVQR.TAG_COUNTRY_CODE ),
+      merchantName: getDataElement( EMVQR.TAG_MERCHANT_NAME ),
+      merchantCity: getDataElement( EMVQR.TAG_MERCHANT_CITY ),
+
+      transactionAmount: parseFloat( getDataElement( EMVQR.TAG_TRANSACTION_AMOUNT ) ),
+      oneTime: getDataElement( 2 ) == '12'
+    }
+
+    return basicElements;
+  }
+  
   /*
    * Validate QR code by EMV Rules
    */

@@ -114,7 +114,9 @@ export class PIXQRCode {
 
   extractElements(): PIXQRCodeElements {
     let emvQR = this.emvQRCode
-    function getDataElement( tag: number ): string {
+    let basicElements = emvQR.extractElements();
+
+/*    function getDataElement( tag: number ): string {
       if ( emvQR.hasElement( tag ) ) {
         return emvQR.getElement( tag ).content;
       }
@@ -122,14 +124,15 @@ export class PIXQRCode {
       return "";
     }
 
+
     let basicElements: EMVQRCodeBasicElements = {
-      merchantCategoryCode: getDataElement( 52 ),
-      transactionCurrency: parseInt(getDataElement( 53 ) ),
-      transactionAmount: parseInt( getDataElement( 54 ) ),
-      countryCode: getDataElement( 58 ),
-      merchantCity: getDataElement( 59 ),
-      merchantName: getDataElement( 60 ),
-    }
+      merchantCategoryCode: getDataElement( EMVQR.TAG_MCC ),
+      transactionCurrency: parseInt(getDataElement( EMVQR.TAG_TRANSACTION_CURRENCY ) ),
+      transactionAmount: parseFloat( getDataElement( EMVQR.TAG_TRANSACTION_AMOUNT ) ),
+      countryCode: getDataElement( EMVQR.TAG_COUNTRY_CODE ),
+      merchantName: getDataElement( EMVQR.TAG_MERCHANT_NAME ),
+      merchantCity: getDataElement( EMVQR.TAG_MERCHANT_CITY ),
+    }*/
 
     if ( this.isPIX( 'static') ) {
       return {
@@ -137,7 +140,7 @@ export class PIXQRCode {
         ...basicElements,
         chave: this.getMAI()?.getElement( PIX.TAG_MAI_CHAVE ).content,
         infoAdicional: this.getMAI()?.getElement( PIX.TAG_MAI_INFO_ADD ).content,
-        txid: emvQR.getElement(62)?.getElement(5)?.content,
+        txid: emvQR.getElement(EMVQR.TAG_ADDITIONAL_DATA)?.getElement(EMVQR.TAG_AD_REF_LABEL)?.content,
       }
     }
     else if( this.isPIX( 'dynamic') ) {

@@ -20,6 +20,12 @@ export class EMVQR {
     static TAG_INIT = 0;
     static TAG_CRC = 63;
     static TAG_MAX = 99;
+    static TAG_MCC = 52;
+    static TAG_TRANSACTION_CURRENCY = 53;
+    static TAG_TRANSACTION_AMOUNT = 54;
+    static TAG_COUNTRY_CODE = 58;
+    static TAG_MERCHANT_NAME = 59;
+    static TAG_MERCHANT_CITY = 60;
     static MAI_TEMPLATE_FIRST = 26;
     static MAI_TEMPLATE_LAST = 51;
     static TAG_TEMPLATE_GUI = 0;
@@ -894,13 +900,13 @@ export class EMVMerchantQRCode extends QRCodeNode {
     static createCode(basicElements) {
         let root = new EMVMerchantQRCode();
         if (basicElements) {
-            root.newDataElement(52, basicElements.merchantCategoryCode);
-            root.newDataElement(53, ("000" + basicElements.transactionCurrency).slice(-3));
-            root.newDataElement(58, basicElements.countryCode);
-            root.newDataElement(59, basicElements.merchantCity);
-            root.newDataElement(60, basicElements.merchantName);
+            root.newDataElement(EMVQR.TAG_MCC, basicElements.merchantCategoryCode);
+            root.newDataElement(EMVQR.TAG_TRANSACTION_CURRENCY, ("000" + basicElements.transactionCurrency).slice(-3));
+            root.newDataElement(EMVQR.TAG_COUNTRY_CODE, basicElements.countryCode);
+            root.newDataElement(EMVQR.TAG_MERCHANT_NAME, basicElements.merchantName);
+            root.newDataElement(EMVQR.TAG_MERCHANT_CITY, basicElements.merchantCity);
             if (basicElements.oneTime) root.newDataElement(2, "12");
-            if (basicElements.transactionAmount) root.newDataElement(54, basicElements.transactionAmount.toFixed(2));
+            if (basicElements.transactionAmount) root.newDataElement(EMVQR.TAG_TRANSACTION_AMOUNT, basicElements.transactionAmount.toFixed(2));
         }
         return root;
     }
@@ -923,6 +929,25 @@ export class EMVMerchantQRCode extends QRCodeNode {
         toTemplate(root, false, 64);
         toTemplate(root, true, 80, 99);
         return root;
+    }
+    extractElements() {
+        let emvQR = this;
+        function getDataElement(tag2) {
+            if (emvQR.hasElement(tag2)) {
+                return emvQR.getElement(tag2).content;
+            }
+            return "";
+        }
+        let basicElements = {
+            merchantCategoryCode: getDataElement(EMVQR.TAG_MCC),
+            transactionCurrency: parseInt(getDataElement(EMVQR.TAG_TRANSACTION_CURRENCY)),
+            countryCode: getDataElement(EMVQR.TAG_COUNTRY_CODE),
+            merchantName: getDataElement(EMVQR.TAG_MERCHANT_NAME),
+            merchantCity: getDataElement(EMVQR.TAG_MERCHANT_CITY),
+            transactionAmount: parseFloat(getDataElement(EMVQR.TAG_TRANSACTION_AMOUNT)),
+            oneTime: getDataElement(2) == '12'
+        };
+        return basicElements;
     }
     async validateCode(observer) {
         return getRuleValidator().validate(this, observer);
