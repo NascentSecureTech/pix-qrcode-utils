@@ -1,3 +1,92 @@
+function getLengths(b64) {
+    const len = b64.length;
+    let validLen = b64.indexOf("=");
+    if (validLen === -1) {
+        validLen = len;
+    }
+    const placeHoldersLen = validLen === len ? 0 : 4 - validLen % 4;
+    return [
+        validLen,
+        placeHoldersLen
+    ];
+}
+function init(lookup, revLookup, urlsafe = false) {
+    function _byteLength(validLen, placeHoldersLen) {
+        return Math.floor((validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen);
+    }
+    function tripletToBase64(num) {
+        return lookup[num >> 18 & 63] + lookup[num >> 12 & 63] + lookup[num >> 6 & 63] + lookup[num & 63];
+    }
+    function encodeChunk(buf, start, end) {
+        const out = new Array((end - start) / 3);
+        for(let i = start, curTriplet = 0; i < end; i += 3){
+            out[curTriplet++] = tripletToBase64((buf[i] << 16) + (buf[i + 1] << 8) + buf[i + 2]);
+        }
+        return out.join("");
+    }
+    return {
+        byteLength (b64) {
+            return _byteLength.apply(null, getLengths(b64));
+        },
+        toUint8Array (b64) {
+            const [validLen, placeHoldersLen] = getLengths(b64);
+            const buf = new Uint8Array(_byteLength(validLen, placeHoldersLen));
+            const len = placeHoldersLen ? validLen - 4 : validLen;
+            let tmp;
+            let curByte = 0;
+            let i;
+            for(i = 0; i < len; i += 4){
+                tmp = revLookup[b64.charCodeAt(i)] << 18 | revLookup[b64.charCodeAt(i + 1)] << 12 | revLookup[b64.charCodeAt(i + 2)] << 6 | revLookup[b64.charCodeAt(i + 3)];
+                buf[curByte++] = tmp >> 16 & 255;
+                buf[curByte++] = tmp >> 8 & 255;
+                buf[curByte++] = tmp & 255;
+            }
+            if (placeHoldersLen === 2) {
+                tmp = revLookup[b64.charCodeAt(i)] << 2 | revLookup[b64.charCodeAt(i + 1)] >> 4;
+                buf[curByte++] = tmp & 255;
+            } else if (placeHoldersLen === 1) {
+                tmp = revLookup[b64.charCodeAt(i)] << 10 | revLookup[b64.charCodeAt(i + 1)] << 4 | revLookup[b64.charCodeAt(i + 2)] >> 2;
+                buf[curByte++] = tmp >> 8 & 255;
+                buf[curByte++] = tmp & 255;
+            }
+            return buf;
+        },
+        fromUint8Array (buf) {
+            const maxChunkLength = 16383;
+            const len = buf.length;
+            const extraBytes = len % 3;
+            const len2 = len - extraBytes;
+            const parts = new Array(Math.ceil(len2 / 16383) + (extraBytes ? 1 : 0));
+            let curChunk = 0;
+            let chunkEnd;
+            for(let i = 0; i < len2; i += 16383){
+                chunkEnd = i + 16383;
+                parts[curChunk++] = encodeChunk(buf, i, chunkEnd > len2 ? len2 : chunkEnd);
+            }
+            let tmp;
+            if (extraBytes === 1) {
+                tmp = buf[len2];
+                parts[curChunk] = lookup[tmp >> 2] + lookup[tmp << 4 & 63];
+                if (!urlsafe) parts[curChunk] += "==";
+            } else if (extraBytes === 2) {
+                tmp = buf[len2] << 8 | buf[len2 + 1] & 255;
+                parts[curChunk] = lookup[tmp >> 10] + lookup[tmp >> 4 & 63] + lookup[tmp << 2 & 63];
+                if (!urlsafe) parts[curChunk] += "=";
+            }
+            return parts.join("");
+        }
+    };
+}
+const lookup = [];
+const revLookup = [];
+const code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+for(let i = 0, l = code.length; i < l; ++i){
+    lookup[i] = code[i];
+    revLookup[code.charCodeAt(i)] = i;
+}
+revLookup["-".charCodeAt(0)] = 62;
+revLookup["_".charCodeAt(0)] = 63;
+const { byteLength , toUint8Array , fromUint8Array  } = init(lookup, revLookup);
 var QRErrorCode2;
 (function(QRErrorCode1) {
     QRErrorCode1[QRErrorCode1["INVALID_PARAM"] = 0] = "INVALID_PARAM";
@@ -818,8 +907,8 @@ function computeCRC(str, invert = false) {
         7920
     ];
     let crc = 65535;
-    for(let i = 0; i < bytes.length; i++){
-        const c = bytes[i];
+    for(let i1 = 0; i1 < bytes.length; i1++){
+        const c = bytes[i1];
         const j = (c ^ crc >> 8) & 255;
         crc = crcTable[j] ^ crc << 8;
     }
@@ -828,9 +917,18 @@ function computeCRC(str, invert = false) {
     if (invert) return hex.slice(2) + hex.slice(0, 2);
     return hex;
 }
-function convertCode(qrCode, _encoding) {
-    if (_encoding && _encoding != 'utf8') throw new QRCodeError2(QRErrorCode2.INVALID_PARAM, "encoding must be 'utf8'");
-    return qrCode ?? '';
+function convertCode(qrCode = '', encoding) {
+    switch(encoding ?? 'utf8'){
+        case 'utf8':
+            return qrCode;
+        case 'base64':
+            {
+                const u8 = toUint8Array(qrCode);
+                return new TextDecoder().decode(u8);
+            }
+        default:
+            throw new QRCodeError2(QRErrorCode2.INVALID_PARAM, "encoding must be 'utf8' or 'base64'");
+    }
 }
 export { QRCodeError1 as QRCodeError, QRErrorCode1 as QRErrorCode };
 function getRuleValidator() {

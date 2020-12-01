@@ -78,10 +78,12 @@ export async function decodeCode( value: string ) {
   let qr;
 
   if ( value.length ) {
+    const encoding = ( value[0] == 'M') ? 'base64' : 'utf8';
+
     try {
       showResult( );
 
-      qr = PIXQRCode.parseCode( value );
+      qr = PIXQRCode.parseCode( value, { encoding } );
 
       //showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
       showResult( qr.emvQRCode.dumpCode() );

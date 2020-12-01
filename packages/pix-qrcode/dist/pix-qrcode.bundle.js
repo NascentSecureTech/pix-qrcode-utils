@@ -455,6 +455,7 @@ function getRuleValidator() {
 }
 const PIXQRErrorCode1 = PIXQRErrorCode2;
 const PIXQRCodeError1 = PIXQRCodeError2;
+export { PIXQRCodeError1 as PIXQRCodeError, PIXQRErrorCode1 as PIXQRErrorCode };
 function getLengths(b64) {
     const len = b64.length;
     let validLen = b64.indexOf("=");
@@ -544,42 +545,6 @@ for(let i = 0, l = code.length; i < l; ++i){
 revLookup["-".charCodeAt(0)] = 62;
 revLookup["_".charCodeAt(0)] = 63;
 const { byteLength , toUint8Array , fromUint8Array  } = init(lookup, revLookup);
-export class PIXPayloadRetriever {
-    constructor(){
-    }
-    async fetchPayload(url) {
-        const opts = {
-            accept: 'x/y',
-            mode: 'no-cors'
-        };
-        console.log("options", opts);
-        let pl = await fetch("https://" + url, opts).then((response)=>{
-            if (!response.ok) throw new Error("HTTP " + response.status);
-            return response.text();
-        }).then((jws)=>{
-            let parts = jws.split('.').map((b64)=>toUint8Array(b64)
-            );
-            let jsons = parts.map((u8)=>new TextDecoder().decode(u8)
-            );
-            let pixFetch = {
-                jwsString: jws,
-                jws: {
-                    hdr: parts[0],
-                    payload: parts[1],
-                    signature: parts[2]
-                },
-                header: JSON.parse(jsons[0]),
-                payload: JSON.parse(jsons[1])
-            };
-            return pixFetch;
-        }).catch((error)=>{
-            console.log(error);
-            throw error;
-        });
-        return pl;
-    }
-}
-export { PIXQRCodeError1 as PIXQRCodeError, PIXQRErrorCode1 as PIXQRErrorCode };
 class QRCodeError extends ValidationError {
     constructor(errorCode2, message2){
         super(errorCode2, message2);
@@ -1098,9 +1063,18 @@ class QRCodeNode {
         return found;
     }
 }
-function convertCode(qrCode, _encoding) {
-    if (_encoding && _encoding != 'utf8') throw new QRCodeError(QRErrorCode.INVALID_PARAM, "encoding must be 'utf8'");
-    return qrCode ?? '';
+function convertCode(qrCode = '', encoding) {
+    switch(encoding ?? 'utf8'){
+        case 'utf8':
+            return qrCode;
+        case 'base64':
+            {
+                const u8 = toUint8Array(qrCode);
+                return new TextDecoder().decode(u8);
+            }
+        default:
+            throw new QRCodeError(QRErrorCode.INVALID_PARAM, "encoding must be 'utf8' or 'base64'");
+    }
 }
 class EMVMerchantQRCode extends QRCodeNode {
     type = "root";
@@ -1278,3 +1252,38 @@ class PIXQRCode {
 }
 const PIXQRCode1 = PIXQRCode;
 export { PIX1 as PIX, PIXQRCode1 as PIXQRCode };
+export class PIXPayloadRetriever {
+    constructor(){
+    }
+    async fetchPayload(url) {
+        const opts = {
+            accept: 'x/y',
+            mode: 'no-cors'
+        };
+        console.log("options", opts);
+        let pl = await fetch("https://" + url, opts).then((response)=>{
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            return response.text();
+        }).then((jws)=>{
+            let parts = jws.split('.').map((b64)=>toUint8Array(b64)
+            );
+            let jsons = parts.map((u8)=>new TextDecoder().decode(u8)
+            );
+            let pixFetch = {
+                jwsString: jws,
+                jws: {
+                    hdr: parts[0],
+                    payload: parts[1],
+                    signature: parts[2]
+                },
+                header: JSON.parse(jsons[0]),
+                payload: JSON.parse(jsons[1])
+            };
+            return pixFetch;
+        }).catch((error)=>{
+            console.log(error);
+            throw error;
+        });
+        return pl;
+    }
+}

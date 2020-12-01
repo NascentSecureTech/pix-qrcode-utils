@@ -1,5 +1,5 @@
+import * as base64 from "https://deno.land/x/base64/mod.ts";
 import { ValidationObserver } from './deps.ts';
-
 import { QRCodeNode, EMVQR } from './qrcode-node.ts';
 import { getRuleValidator } from './qrcode-validator.ts';
 import { computeCRC } from './crc.ts';
@@ -7,7 +7,7 @@ import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
 import { QRSchemaElement, rootScheme } from './element-scheme.ts';
 
 export interface EMVMerchantQRParams {
-  encoding?: 'utf8'// |'base64';
+  encoding?: 'utf8'|'base64';
 }
 
 const defaultParams: EMVMerchantQRParams = {
@@ -35,11 +35,20 @@ export interface EMVQRCodeBasicElements extends EMVQRCodeMandatoryElements {
   transactionAmount?: number;     // EL54
 }
 
-function convertCode( qrCode?: string, _encoding?: 'utf8' |'base64' ): string {
-  if ( _encoding && _encoding != 'utf8' )
-    throw new QRCodeError( QRErrorCode.INVALID_PARAM, "encoding must be 'utf8'" );
+function convertCode( qrCode: string = '', encoding?: 'utf8' |'base64' ): string {
+  switch( encoding ?? 'utf8' ) {
+    case 'utf8':
+      return qrCode;
 
-  return qrCode ?? '';
+    case 'base64': {
+      const u8 = base64.toUint8Array(qrCode);
+
+      return new TextDecoder().decode( u8 );
+    }
+
+    default:
+      throw new QRCodeError( QRErrorCode.INVALID_PARAM, "encoding must be 'utf8' or 'base64'" );
+  }
 }
 
 export class EMVMerchantQRCode extends QRCodeNode {
@@ -137,7 +146,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
 
     return basicElements;
   }
-  
+
   /*
    * Validate QR code by EMV Rules
    */
