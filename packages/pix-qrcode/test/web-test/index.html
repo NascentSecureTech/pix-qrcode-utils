@@ -18,6 +18,24 @@
       defer
       src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"
     ></script>
+    <style>
+    #results {
+      box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12);
+
+    }
+
+      td table {
+        width: 100%;
+      }
+      td.no-padding {
+        padding: 0;
+        margin: 0;
+      }
+
+      tr.is-collapsed td {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <section class="section container">
@@ -99,7 +117,7 @@
         </button>
       </div>
       <div class="columns">
-        <div class="column">
+        <div id="results" class="column">
           <label for="decoded">Decoded QR</label>
           <textarea
             id="decoded"
@@ -220,6 +238,122 @@
       </div>
     </div>
   </body>
+
+  <script type="module">
+    import { PIX, EMVQR, PIXQRCode, rootEMVSchema } from "/js/pix-qrcode-wrapper.js";
+
+    function createTable( el, hdrs ) {
+      // Create a table element
+      let table = document.createElement("table");
+
+      table.classList.add("table");
+
+      // Create table row tr element of a table
+      let tr = table.insertRow(-1);
+
+      for (let i = 0; i < hdrs.length; i++) {
+        // Create the table header th element
+        let theader = document.createElement("th");
+        theader.innerText = hdrs[i];
+
+        // Append columnName to the table row
+        tr.appendChild(theader);
+      }
+
+      el.innerHTML = "";
+      el.appendChild(table);
+
+      return table;
+    }
+
+    function insertRow( table, cols ) {
+      // Create a new row
+      let trow = table.insertRow(-1);
+
+      for (let j = 0; j < cols.length; j++) {
+        let cell = trow.insertCell(-1);
+
+        // Inserting the cell at particular place
+        cell.innerHTML = cols[j];
+      }
+
+      return trow;
+    }
+
+    function renderQRTable( value ) {
+      // Add the newly created table containing json data
+      var el = document.getElementById("results");
+      let qr = PIXQRCode.parseCode( value );
+
+      function render( el, qrn, schema ) {
+        let table = createTable( el, [ "", "ID", "EMV Name", "Len", "Value" ] );
+        let elementMap = schema?.elementMap;
+
+        if ( schema?.identifiedElementMap ) {
+          if ( qrn.hasElement( EMVQR.TAG_TEMPLATE_GUI ) ) {
+            let gui = qrn.getElement( EMVQR.TAG_TEMPLATE_GUI ).content.toUpperCase();
+
+            for( let xx in schema.identifiedElementMap ) {
+              if ( xx.toUpperCase() == gui ) {
+                elementMap = {
+                  ...elementMap,
+                  ...schema.identifiedElementMap[xx]
+                }
+              }
+            }
+          }
+        }
+
+        for( let nn of qrn.elements ) {
+          const node = nn[1];
+          let ch = ( node.isTemplate() ) ? "-" : "";
+          let nodeSchema = elementMap?.[ node.tag ] ?? { name: 'unknown', elementMap: {} };
+
+          let trow = insertRow( table, [ ch, node.tag, nodeSchema.name, node.content.length, node.content ] );
+
+          if ( node.isTemplate() ) {
+            trow.firstChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
+
+            // Create a new row
+            trow = table.insertRow(-1);
+            trow.classList.add('is-collapsed');
+
+            let cell = trow.insertCell(-1);
+
+            cell = trow.insertCell(-1);
+            cell.colSpan = 4;
+
+            render( cell, node, nodeSchema );
+          }
+        }
+      }
+      let qrn = qr.emvQRCode;
+
+      let elMap = rootEMVSchema.elementMap[26].identifiedElementMap = {};
+      elMap[ PIX.GUI ] = {
+        1: { name: "Chave PIX" },
+        2: { name: "Informações Adicionais"}
+        25: { name: "URL do Payload" }
+      }
+
+      render( el, qrn, rootEMVSchema );
+    }
+
+    function openCloseRow( el ) {
+      let row = el.parentNode.nextSibling;
+
+      if ( row.classList.contains('is-collapsed') ) {
+        row.classList.remove('is-collapsed');
+        row.firstChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-up'></i></td>";
+      }
+      else {
+        row.classList.add('is-collapsed');
+        row.firstChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
+      }
+    }
+    window.renderQRTable = renderQRTable;
+    window.openCloseRow = openCloseRow;
+  </script>
 
   <script type="module">
     var tabIndex = 0;
@@ -343,7 +477,9 @@
     document.addEventListener(
       "DOMContentLoaded",
       () => {
-        decodeCode(document.getElementById("qr-string").value.trim());
+        let qrs = "00020101021226850014br.gov.bcb.pix2563pix.santander.com.br/qr/v2/b29bd384-c7cc-4156-8cae-4935c060c25252040000530398654040.025802BR5925ANA PAULA VIEIRA SALDANHA6009SAO PAULO62070503***63041C57";
+
+        renderQRTable(qrs /*&& document.getElementById("qr-string").value.trim()*/);
       },
       false
     );

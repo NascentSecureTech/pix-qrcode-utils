@@ -4,6 +4,8 @@ export interface QRSchemaElement extends DataSchemaElement {
   lastTag?: number;
 
   elementMap?: QRElementSchemaMap;
+
+  identifiedElementMap?: Record<string, QRElementSchemaMap>;
 }
 
 export type QRElementSchemaMap = Record<number, QRSchemaElement>;
@@ -108,7 +110,7 @@ const merchantInformationLanguageTemplateMap = {
   },
 }
 
-const rootSchemeMap: QRElementSchemaMap = {
+const rootSchemaMap: QRElementSchemaMap = {
   0: {
     name: 'Payload Format Indicator',
     length: 2,
@@ -202,7 +204,7 @@ const rootSchemeMap: QRElementSchemaMap = {
   },
 };
 
-export const rootScheme = {
+export const rootEMVSchema = {
   name: 'root',
-  elementMap: rootSchemeMap
+  elementMap: rootSchemaMap
 }

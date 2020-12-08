@@ -1,5 +1,5 @@
 import { RuleValidator, ValidationError } from './deps.ts';
-import { QRSchemaElement, rootScheme } from './element-scheme.ts';
+import { QRSchemaElement, rootEMVSchema } from './element-scheme.ts';
 import { QRCodeNode } from './qrcode-node.ts';
 import { computeCRC } from './crc.ts';
 
@@ -74,11 +74,11 @@ function validateNode( node: QRCodeNode, schema: QRSchemaElement, path: string =
   }
   else {
     node.elements.forEach( (element: QRCodeNode ) => {
-      let nodeScheme: QRSchemaElement = schema?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
+      let nodeSchema: QRSchemaElement = schema?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
 
       let elementPath = path + (path.length ? ":" : "") + ("00"+element.tag!).slice( -2 );
 
-      validateNode( element, nodeScheme, elementPath );
+      validateNode( element, nodeSchema, elementPath );
     })
   }
 }
@@ -153,7 +153,7 @@ export function getRuleValidator(): RuleValidator<QRCodeNode> {
         id: "valid-elements",
         description: "Elements are valid",
         rule: ( root, _val ) => {
-          validateNode( root, rootScheme );
+          validateNode( root, rootEMVSchema );
         }
       }
     );

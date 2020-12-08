@@ -212,7 +212,7 @@ const mandatoryElements = [
     60,
     63
 ];
-class EMVQR {
+class EMVQR2 {
     static TAG_INIT = 0;
     static TAG_CRC = 63;
     static TAG_MAX = 99;
@@ -346,7 +346,7 @@ const merchantInformationLanguageTemplateMap = {
         optional: true
     }
 };
-const rootSchemeMap = {
+const rootSchemaMap = {
     0: {
         name: 'Payload Format Indicator',
         length: 2,
@@ -445,9 +445,9 @@ const rootSchemeMap = {
         elementMap: reservedTemplateMap
     }
 };
-const rootScheme = {
+const rootEMVSchema2 = {
     name: 'root',
-    elementMap: rootSchemeMap
+    elementMap: rootSchemaMap
 };
 const defaultParams1 = {
     encoding: 'utf8'
@@ -455,6 +455,8 @@ const defaultParams1 = {
 const PIXQRErrorCode1 = PIXQRErrorCode2;
 const PIXQRCodeError1 = PIXQRCodeError2;
 const PIX1 = PIX2;
+const EMVQR1 = EMVQR2;
+const rootEMVSchema1 = rootEMVSchema2;
 var document = window.document, QRious = window.QRious;
 function handleQRError(E) {
     let result = "ERROR";
@@ -643,13 +645,13 @@ function validateNode(node, schema, path = "") {
         validateElement(node.content, schema, path);
     } else {
         node.elements.forEach((element)=>{
-            let nodeScheme = schema?.elementMap?.[element.tag] ?? {
+            let nodeSchema = schema?.elementMap?.[element.tag] ?? {
                 name: 'unknown',
                 elementMap: {
                 }
             };
             let elementPath = path + (path.length ? ":" : "") + ("00" + element.tag).slice(-2);
-            validateNode(element, nodeScheme, elementPath);
+            validateNode(element, nodeSchema, elementPath);
         });
     }
 }
@@ -772,8 +774,8 @@ class QRCodeNode {
             let qrs = [];
             this.elements.forEach((element)=>{
                 if (!isRoot || !valueIn([
-                    EMVQR.TAG_INIT,
-                    EMVQR.TAG_CRC
+                    EMVQR2.TAG_INIT,
+                    EMVQR2.TAG_CRC
                 ], element.tag)) {
                     let els = element.buildQRString(offset);
                     qrs.push(els);
@@ -788,10 +790,10 @@ class QRCodeNode {
         }
         return content2;
     }
-    findIdentifiedTemplate(id, first = 0, last = EMVQR.TAG_MAX) {
+    findIdentifiedTemplate(id, first = 0, last = EMVQR2.TAG_MAX) {
         let found = [];
         this.elements.forEach((element)=>{
-            if (element.isType('identified-template') && element.tag >= first && element.tag <= last && element.hasElement(EMVQR.TAG_TEMPLATE_GUI) && element.getElement(EMVQR.TAG_TEMPLATE_GUI).content.toUpperCase() == id.toUpperCase()) {
+            if (element.isType('identified-template') && element.tag >= first && element.tag <= last && element.hasElement(EMVQR2.TAG_TEMPLATE_GUI) && element.getElement(EMVQR2.TAG_TEMPLATE_GUI).content.toUpperCase() == id.toUpperCase()) {
                 found.push(element);
             }
         });
@@ -1137,7 +1139,7 @@ function getRuleValidator1() {
         id: "valid-elements",
         description: "Elements are valid",
         rule: (root, _val)=>{
-            validateNode(root, rootScheme);
+            validateNode(root, rootEMVSchema2);
         }
     });
 }
@@ -1149,13 +1151,13 @@ class EMVMerchantQRCode extends QRCodeNode {
     static createCode(basicElements) {
         let root = new EMVMerchantQRCode();
         if (basicElements) {
-            root.newDataElement(EMVQR.TAG_MCC, basicElements.merchantCategoryCode);
-            root.newDataElement(EMVQR.TAG_TRANSACTION_CURRENCY, ("000" + basicElements.transactionCurrency).slice(-3));
-            root.newDataElement(EMVQR.TAG_COUNTRY_CODE, basicElements.countryCode);
-            root.newDataElement(EMVQR.TAG_MERCHANT_NAME, basicElements.merchantName);
-            root.newDataElement(EMVQR.TAG_MERCHANT_CITY, basicElements.merchantCity);
+            root.newDataElement(EMVQR2.TAG_MCC, basicElements.merchantCategoryCode);
+            root.newDataElement(EMVQR2.TAG_TRANSACTION_CURRENCY, ("000" + basicElements.transactionCurrency).slice(-3));
+            root.newDataElement(EMVQR2.TAG_COUNTRY_CODE, basicElements.countryCode);
+            root.newDataElement(EMVQR2.TAG_MERCHANT_NAME, basicElements.merchantName);
+            root.newDataElement(EMVQR2.TAG_MERCHANT_CITY, basicElements.merchantCity);
             if (basicElements.oneTime) root.newDataElement(2, "12");
-            if (basicElements.transactionAmount) root.newDataElement(EMVQR.TAG_TRANSACTION_AMOUNT, basicElements.transactionAmount.toFixed(2));
+            if (basicElements.transactionAmount) root.newDataElement(EMVQR2.TAG_TRANSACTION_AMOUNT, basicElements.transactionAmount.toFixed(2));
         }
         return root;
     }
@@ -1170,10 +1172,10 @@ class EMVMerchantQRCode extends QRCodeNode {
                 if (node.hasElement(index)) node.getElement(index).parseAsTemplate(isIdentified);
             }
         }
-        toTemplate(root, true, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
-        if (root.hasElement(EMVQR.TAG_ADDITIONAL_DATA)) {
-            toTemplate(root, false, EMVQR.TAG_ADDITIONAL_DATA);
-            toTemplate(root.getElement(EMVQR.TAG_ADDITIONAL_DATA), true, 50, 99);
+        toTemplate(root, true, EMVQR2.MAI_TEMPLATE_FIRST, EMVQR2.MAI_TEMPLATE_LAST);
+        if (root.hasElement(EMVQR2.TAG_ADDITIONAL_DATA)) {
+            toTemplate(root, false, EMVQR2.TAG_ADDITIONAL_DATA);
+            toTemplate(root.getElement(EMVQR2.TAG_ADDITIONAL_DATA), true, 50, 99);
         }
         toTemplate(root, false, 64);
         toTemplate(root, true, 80, 99);
@@ -1188,12 +1190,12 @@ class EMVMerchantQRCode extends QRCodeNode {
             return "";
         }
         let basicElements = {
-            merchantCategoryCode: getDataElement(EMVQR.TAG_MCC),
-            transactionCurrency: parseInt(getDataElement(EMVQR.TAG_TRANSACTION_CURRENCY)),
-            countryCode: getDataElement(EMVQR.TAG_COUNTRY_CODE),
-            merchantName: getDataElement(EMVQR.TAG_MERCHANT_NAME),
-            merchantCity: getDataElement(EMVQR.TAG_MERCHANT_CITY),
-            transactionAmount: parseFloat(getDataElement(EMVQR.TAG_TRANSACTION_AMOUNT)),
+            merchantCategoryCode: getDataElement(EMVQR2.TAG_MCC),
+            transactionCurrency: parseInt(getDataElement(EMVQR2.TAG_TRANSACTION_CURRENCY)),
+            countryCode: getDataElement(EMVQR2.TAG_COUNTRY_CODE),
+            merchantName: getDataElement(EMVQR2.TAG_MERCHANT_NAME),
+            merchantCity: getDataElement(EMVQR2.TAG_MERCHANT_CITY),
+            transactionAmount: parseFloat(getDataElement(EMVQR2.TAG_TRANSACTION_AMOUNT)),
             oneTime: getDataElement(2) == '12'
         };
         return basicElements;
@@ -1205,36 +1207,36 @@ class EMVMerchantQRCode extends QRCodeNode {
         let content2 = this.content;
         content2 = this.ensureDataElement(0, "01").buildQRString();
         content2 += super.buildQRString(content2.length);
-        content2 += this.newDataElement(EMVQR.TAG_CRC, "0000").buildQRString(content2.length).slice(0, -4);
+        content2 += this.newDataElement(EMVQR2.TAG_CRC, "0000").buildQRString(content2.length).slice(0, -4);
         const crc = computeCRC(content2);
-        this.getElement(EMVQR.TAG_CRC).content = crc;
+        this.getElement(EMVQR2.TAG_CRC).content = crc;
         this.baseOffset = 0;
         this.content = content2 = content2 + crc;
         return content2;
     }
     dumpCode() {
-        function dumpNode(node, scheme, indent) {
+        function dumpNode(node, schema, indent) {
             let result = "";
             if (node.isType('data')) {
-                result += indent + ("00" + node.tag).slice(-2) + ' (' + scheme.name + ')' + "\n";
+                result += indent + ("00" + node.tag).slice(-2) + ' (' + schema.name + ')' + "\n";
                 result += indent + '  ' + node.content + "\n";
             } else {
                 if (!node.isType('root')) {
-                    result += indent + '(' + ("00" + node.tag).slice(-2) + '): ' + scheme.name + "\n";
+                    result += indent + '(' + ("00" + node.tag).slice(-2) + '): ' + schema.name + "\n";
                     indent += "  ";
                 }
                 node.elements.forEach((element)=>{
-                    let nodeScheme = scheme?.elementMap?.[element.tag] ?? {
+                    let nodeSchema = schema?.elementMap?.[element.tag] ?? {
                         name: 'unknown',
                         elementMap: {
                         }
                     };
-                    result += dumpNode(element, nodeScheme, indent);
+                    result += dumpNode(element, nodeSchema, indent);
                 });
             }
             return result;
         }
-        return dumpNode(this, rootScheme, "");
+        return dumpNode(this, rootEMVSchema2, "");
     }
 }
 const PIXPayloadRetriever1 = PIXPayloadRetriever2;
@@ -1243,7 +1245,7 @@ class PIXQRCode2 {
         return this._emvQRCode;
     }
     getMAI() {
-        let maiList = this.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
+        let maiList = this.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR2.MAI_TEMPLATE_FIRST, EMVQR2.MAI_TEMPLATE_LAST);
         return maiList[0];
     }
     constructor(emvQRCode){
@@ -1252,16 +1254,16 @@ class PIXQRCode2 {
     static createCode(elements) {
         let pixQRCode = new PIXQRCode2(EMVMerchantQRCode.createCode(elements));
         let emvQRCode1 = pixQRCode.emvQRCode;
-        let guiNode = new QRCodeNode('data', PIX2.GUI, EMVQR.TAG_TEMPLATE_GUI);
-        const maiPIX = emvQRCode1.newTemplateElement(EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST, true, [
+        let guiNode = new QRCodeNode('data', PIX2.GUI, EMVQR2.TAG_TEMPLATE_GUI);
+        const maiPIX = emvQRCode1.newTemplateElement(EMVQR2.MAI_TEMPLATE_FIRST, EMVQR2.MAI_TEMPLATE_LAST, true, [
             guiNode
         ]);
         if (elements.type == "static") {
             if (elements.chave) maiPIX.newDataElement(PIX2.TAG_MAI_CHAVE, elements.chave);
             if (elements.infoAdicional) maiPIX.newDataElement(PIX2.TAG_MAI_INFO_ADD, elements.infoAdicional);
             if (elements.txid) {
-                let el62 = emvQRCode1.newTemplateElement(EMVQR.TAG_ADDITIONAL_DATA);
-                el62.newDataElement(EMVQR.TAG_AD_REF_LABEL, elements.txid);
+                let el62 = emvQRCode1.newTemplateElement(EMVQR2.TAG_ADDITIONAL_DATA);
+                el62.newDataElement(EMVQR2.TAG_AD_REF_LABEL, elements.txid);
             }
         } else {
             if (elements.url) maiPIX.newDataElement(PIX2.TAG_MAI_URL, elements.url);
@@ -1304,7 +1306,7 @@ class PIXQRCode2 {
                 ...basicElements,
                 chave: this.getMAI()?.getElement(PIX2.TAG_MAI_CHAVE).content,
                 infoAdicional: this.getMAI()?.getElement(PIX2.TAG_MAI_INFO_ADD).content,
-                txid: emvQR.getElement(EMVQR.TAG_ADDITIONAL_DATA)?.getElement(EMVQR.TAG_AD_REF_LABEL)?.content
+                txid: emvQR.getElement(EMVQR2.TAG_ADDITIONAL_DATA)?.getElement(EMVQR2.TAG_AD_REF_LABEL)?.content
             };
         } else if (this.isPIX('dynamic')) {
             return {
@@ -1317,7 +1319,7 @@ class PIXQRCode2 {
     }
 }
 const PIXQRCode1 = PIXQRCode2;
-export { PIX1 as PIX, PIXQRCode1 as PIXQRCode, PIXQRErrorCode1 as PIXQRErrorCode, PIXQRCodeError1 as PIXQRCodeError, PIXPayloadRetriever1 as PIXPayloadRetriever };
+export { PIX1 as PIX, EMVQR1 as EMVQR, PIXQRCode1 as PIXQRCode, PIXQRErrorCode1 as PIXQRErrorCode, PIXQRCodeError1 as PIXQRCodeError, PIXPayloadRetriever1 as PIXPayloadRetriever, rootEMVSchema1 as rootEMVSchema };
 export async function decodeCode(value) {
     let qr;
     if (value.length) {
@@ -1376,7 +1378,7 @@ export async function fetchDynamic(value) {
         let pix = PIXQRCode2.parseCode(value);
         console.log(pix);
         await pix.validateCode();
-        let tmpl = pix.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST)[0];
+        let tmpl = pix.emvQRCode.findIdentifiedTemplate(PIX2.GUI, EMVQR2.MAI_TEMPLATE_FIRST, EMVQR2.MAI_TEMPLATE_LAST)[0];
         let url = tmpl.getElement(PIX2.TAG_MAI_URL).content;
         console.log(url);
         url = "pix.nascent.com.br/proxy?url=" + encodeURI("https://" + url);

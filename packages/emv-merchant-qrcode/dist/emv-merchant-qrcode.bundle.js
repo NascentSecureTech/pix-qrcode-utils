@@ -350,7 +350,7 @@ const merchantInformationLanguageTemplateMap = {
         optional: true
     }
 };
-const rootSchemeMap = {
+const rootSchemaMap = {
     0: {
         name: 'Payload Format Indicator',
         length: 2,
@@ -449,13 +449,16 @@ const rootSchemeMap = {
         elementMap: reservedTemplateMap
     }
 };
-export const rootScheme = {
+const rootEMVSchema2 = {
     name: 'root',
-    elementMap: rootSchemeMap
+    elementMap: rootSchemaMap
 };
+export { rootEMVSchema2 as rootEMVSchema };
+const rootEMVSchema1 = rootEMVSchema2;
 const defaultParams = {
     encoding: 'utf8'
 };
+export { rootEMVSchema1 as rootEMVSchema };
 const QRErrorCode1 = QRErrorCode2;
 class QRCodeError2 extends ValidationError {
     constructor(errorCode1, message1){
@@ -491,13 +494,13 @@ function validateNode(node, schema, path = "") {
         validateElement(node.content, schema, path);
     } else {
         node.elements.forEach((element)=>{
-            let nodeScheme = schema?.elementMap?.[element.tag] ?? {
+            let nodeSchema = schema?.elementMap?.[element.tag] ?? {
                 name: 'unknown',
                 elementMap: {
                 }
             };
             let elementPath = path + (path.length ? ":" : "") + ("00" + element.tag).slice(-2);
-            validateNode(element, nodeScheme, elementPath);
+            validateNode(element, nodeSchema, elementPath);
         });
     }
 }
@@ -986,7 +989,7 @@ function getRuleValidator() {
         id: "valid-elements",
         description: "Elements are valid",
         rule: (root, _val)=>{
-            validateNode(root, rootScheme);
+            validateNode(root, rootEMVSchema2);
         }
     });
 }
@@ -1062,27 +1065,27 @@ export class EMVMerchantQRCode extends QRCodeNode {
         return content2;
     }
     dumpCode() {
-        function dumpNode(node, scheme, indent) {
+        function dumpNode(node, schema, indent) {
             let result = "";
             if (node.isType('data')) {
-                result += indent + ("00" + node.tag).slice(-2) + ' (' + scheme.name + ')' + "\n";
+                result += indent + ("00" + node.tag).slice(-2) + ' (' + schema.name + ')' + "\n";
                 result += indent + '  ' + node.content + "\n";
             } else {
                 if (!node.isType('root')) {
-                    result += indent + '(' + ("00" + node.tag).slice(-2) + '): ' + scheme.name + "\n";
+                    result += indent + '(' + ("00" + node.tag).slice(-2) + '): ' + schema.name + "\n";
                     indent += "  ";
                 }
                 node.elements.forEach((element)=>{
-                    let nodeScheme = scheme?.elementMap?.[element.tag] ?? {
+                    let nodeSchema = schema?.elementMap?.[element.tag] ?? {
                         name: 'unknown',
                         elementMap: {
                         }
                     };
-                    result += dumpNode(element, nodeScheme, indent);
+                    result += dumpNode(element, nodeSchema, indent);
                 });
             }
             return result;
         }
-        return dumpNode(this, rootScheme, "");
+        return dumpNode(this, rootEMVSchema2, "");
     }
 }

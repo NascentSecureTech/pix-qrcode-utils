@@ -1,6 +1,6 @@
-import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, PIXQRCodeElements, PIX, EMVQR } from "./deps.ts";
+import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, PIXQRCodeElements, PIX, EMVQR, rootEMVSchema } from "./deps.ts";
 
-export { PIX, PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever };
+export { PIX, EMVQR, PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, rootEMVSchema };
 
 var document = (window as any).document, QRious = (window as any).QRious; // , prompt = (window as any).prompt;
 

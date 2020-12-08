@@ -4,7 +4,7 @@ import { QRCodeNode, EMVQR } from './qrcode-node.ts';
 import { getRuleValidator } from './qrcode-validator.ts';
 import { computeCRC } from './crc.ts';
 import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
-import { QRSchemaElement, rootScheme } from './element-scheme.ts';
+import { QRSchemaElement, rootEMVSchema } from './element-scheme.ts';
 
 export interface EMVMerchantQRParams {
   encoding?: 'utf8'|'base64';
@@ -183,30 +183,30 @@ export class EMVMerchantQRCode extends QRCodeNode {
   }
 
   dumpCode() {
-    function dumpNode( node: QRCodeNode, scheme: QRSchemaElement, indent: string ): string {
+    function dumpNode( node: QRCodeNode, schema: QRSchemaElement, indent: string ): string {
       let result = "";
 
       if ( node.isType( 'data' ) ) {
-        result += indent + ("00"+node.tag).slice(-2)+ ' (' + scheme.name + ')' + "\n";
+        result += indent + ("00"+node.tag).slice(-2)+ ' (' + schema.name + ')' + "\n";
         result += indent + '  '+node.content + "\n";
       }
       else {
         if ( !node.isType( 'root' ) )  {
-          result += indent + '('+ ("00"+node.tag).slice(-2)+ '): ' + scheme.name + "\n";
+          result += indent + '('+ ("00"+node.tag).slice(-2)+ '): ' + schema.name + "\n";
 
           indent += "  ";
         }
 
         node.elements.forEach( (element: QRCodeNode ) => {
-          let nodeScheme: QRSchemaElement = scheme?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
+          let nodeSchema: QRSchemaElement = schema?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
 
-          result += dumpNode( element, nodeScheme, indent );
+          result += dumpNode( element, nodeSchema, indent );
         })
       }
 
       return result;
     }
 
-    return dumpNode( this, rootScheme, "" );
+    return dumpNode( this, rootEMVSchema, "" );
   }
 }
