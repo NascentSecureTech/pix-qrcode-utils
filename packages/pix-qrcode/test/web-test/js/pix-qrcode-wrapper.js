@@ -194,6 +194,24 @@ function getRuleValidator() {
     addDynamicRules(v);
     return v;
 }
+class EMVQR2 {
+    static TAG_INIT = 0;
+    static TAG_CRC = 63;
+    static TAG_MAX = 99;
+    static TAG_POI_METHOD = 2;
+    static TAG_MCC = 52;
+    static TAG_TRANSACTION_CURRENCY = 53;
+    static TAG_TRANSACTION_AMOUNT = 54;
+    static TAG_COUNTRY_CODE = 58;
+    static TAG_MERCHANT_NAME = 59;
+    static TAG_MERCHANT_CITY = 60;
+    static MAI_STANDARD_FIRST = 2;
+    static MAI_TEMPLATE_FIRST = 26;
+    static MAI_TEMPLATE_LAST = 51;
+    static TAG_TEMPLATE_GUI = 0;
+    static TAG_ADDITIONAL_DATA = 62;
+    static TAG_AD_REF_LABEL = 5;
+}
 var QRErrorCode;
 (function(QRErrorCode1) {
     QRErrorCode1[QRErrorCode1["INVALID_PARAM"] = 0] = "INVALID_PARAM";
@@ -204,30 +222,14 @@ var QRErrorCode;
 })(QRErrorCode || (QRErrorCode = {
 }));
 const mandatoryElements = [
-    0,
-    52,
-    53,
-    58,
-    59,
-    60,
-    63
+    EMVQR2.TAG_INIT,
+    EMVQR2.TAG_MCC,
+    EMVQR2.TAG_TRANSACTION_CURRENCY,
+    EMVQR2.TAG_COUNTRY_CODE,
+    EMVQR2.TAG_MERCHANT_NAME,
+    EMVQR2.TAG_MERCHANT_CITY,
+    EMVQR2.TAG_CRC
 ];
-class EMVQR2 {
-    static TAG_INIT = 0;
-    static TAG_CRC = 63;
-    static TAG_MAX = 99;
-    static TAG_MCC = 52;
-    static TAG_TRANSACTION_CURRENCY = 53;
-    static TAG_TRANSACTION_AMOUNT = 54;
-    static TAG_COUNTRY_CODE = 58;
-    static TAG_MERCHANT_NAME = 59;
-    static TAG_MERCHANT_CITY = 60;
-    static MAI_TEMPLATE_FIRST = 26;
-    static MAI_TEMPLATE_LAST = 51;
-    static TAG_TEMPLATE_GUI = 0;
-    static TAG_ADDITIONAL_DATA = 62;
-    static TAG_AD_REF_LABEL = 5;
-}
 const paymentSystemSpecificTemplateMap = {
     0: {
         name: 'Globally Unique Identifier',
@@ -449,6 +451,39 @@ const rootEMVSchema2 = {
     name: 'root',
     elementMap: rootSchemaMap
 };
+function lookupNodeSchema2(schema, node, tag) {
+    let elementMap = schema?.elementMap;
+    if (schema?.identifiedElementMap) {
+        if (node.hasElement(EMVQR2.TAG_TEMPLATE_GUI)) {
+            let gui = node.getElement(EMVQR2.TAG_TEMPLATE_GUI).content.toUpperCase();
+            for(let xx in schema.identifiedElementMap){
+                if (xx.toUpperCase() == gui) {
+                    elementMap = {
+                        ...elementMap,
+                        ...schema.identifiedElementMap[xx]
+                    };
+                }
+            }
+        }
+    }
+    let nodeSchema = {
+        name: 'Unknown',
+        elementMap: {
+        }
+    };
+    if (elementMap?.[tag]) {
+        nodeSchema = elementMap[tag];
+    } else {
+        for(let xx in elementMap){
+            let elTag = parseInt(xx);
+            let el = elementMap[elTag];
+            if (tag >= elTag && el.lastTag && tag <= el.lastTag) {
+                nodeSchema = el;
+            }
+        }
+    }
+    return nodeSchema;
+}
 const defaultParams1 = {
     encoding: 'utf8'
 };
@@ -457,6 +492,7 @@ const PIXQRCodeError1 = PIXQRCodeError2;
 const PIX1 = PIX2;
 const EMVQR1 = EMVQR2;
 const rootEMVSchema1 = rootEMVSchema2;
+const lookupNodeSchema1 = lookupNodeSchema2;
 var document = window.document, QRious = window.QRious;
 function handleQRError(E) {
     let result = "ERROR";
@@ -468,12 +504,13 @@ function handleQRError(E) {
     return result;
 }
 function showResult(success, error) {
+    let elOutput = document.getElementById('decoded');
     let elDecoded = document.getElementById('decoded');
     let elStatus = document.getElementById('qr-status');
     elStatus.classList.remove("has-background-danger");
     elStatus.classList.remove('has-text-secondary');
     elStatus.classList.remove("has-background-info");
-    elDecoded.classList.remove('is-hidden');
+    elOutput.classList.remove('is-hidden');
     if (error && error.length > 0) {
         elStatus.value = error;
         elStatus.classList.add("has-background-danger");
@@ -484,7 +521,7 @@ function showResult(success, error) {
         elDecoded.value = success;
     } else {
         elStatus.value = '';
-        elDecoded.classList.add('is-hidden');
+        elOutput.classList.add('is-hidden');
     }
 }
 let $qrImage;
@@ -645,11 +682,7 @@ function validateNode(node, schema, path = "") {
         validateElement(node.content, schema, path);
     } else {
         node.elements.forEach((element)=>{
-            let nodeSchema = schema?.elementMap?.[element.tag] ?? {
-                name: 'unknown',
-                elementMap: {
-                }
-            };
+            let nodeSchema = lookupNodeSchema2(schema, node, element.tag);
             let elementPath = path + (path.length ? ":" : "") + ("00" + element.tag).slice(-2);
             validateNode(element, nodeSchema, elementPath);
         });
@@ -1102,7 +1135,7 @@ function getRuleValidator1() {
         id: "final-element-63",
         description: "Final element is CRC '63'",
         rule: (root, _val)=>{
-            let crcEl = root.getElement(63);
+            let crcEl = root.getElement(EMVQR2.TAG_CRC);
             if (crcEl.baseOffset != root.content.length - 8 || root.content.slice(-8, -4) != '6304') {
                 throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "CRC must be final element (63)");
             }
@@ -1111,7 +1144,7 @@ function getRuleValidator1() {
         id: "valid-crc",
         description: "CRC is valid",
         rule: (root, _val)=>{
-            let crcEl = root.getElement(63);
+            let crcEl = root.getElement(EMVQR2.TAG_CRC);
             let calculatedCRC = computeCRC(root.content.slice(0, -4));
             if (calculatedCRC != crcEl.content) {
                 throw new QRCodeError(QRErrorCode.CRC_MISMATCH, "Invalid CRC");
@@ -1156,7 +1189,7 @@ class EMVMerchantQRCode extends QRCodeNode {
             root.newDataElement(EMVQR2.TAG_COUNTRY_CODE, basicElements.countryCode);
             root.newDataElement(EMVQR2.TAG_MERCHANT_NAME, basicElements.merchantName);
             root.newDataElement(EMVQR2.TAG_MERCHANT_CITY, basicElements.merchantCity);
-            if (basicElements.oneTime) root.newDataElement(2, "12");
+            if (basicElements.oneTime) root.newDataElement(EMVQR2.TAG_POI_METHOD, "12");
             if (basicElements.transactionAmount) root.newDataElement(EMVQR2.TAG_TRANSACTION_AMOUNT, basicElements.transactionAmount.toFixed(2));
         }
         return root;
@@ -1196,7 +1229,7 @@ class EMVMerchantQRCode extends QRCodeNode {
             merchantName: getDataElement(EMVQR2.TAG_MERCHANT_NAME),
             merchantCity: getDataElement(EMVQR2.TAG_MERCHANT_CITY),
             transactionAmount: parseFloat(getDataElement(EMVQR2.TAG_TRANSACTION_AMOUNT)),
-            oneTime: getDataElement(2) == '12'
+            oneTime: getDataElement(EMVQR2.TAG_POI_METHOD) == '12'
         };
         return basicElements;
     }
@@ -1319,7 +1352,25 @@ class PIXQRCode2 {
     }
 }
 const PIXQRCode1 = PIXQRCode2;
-export { PIX1 as PIX, EMVQR1 as EMVQR, PIXQRCode1 as PIXQRCode, PIXQRErrorCode1 as PIXQRErrorCode, PIXQRCodeError1 as PIXQRCodeError, PIXPayloadRetriever1 as PIXPayloadRetriever, rootEMVSchema1 as rootEMVSchema };
+export { PIX1 as PIX, EMVQR1 as EMVQR, PIXQRCode1 as PIXQRCode, PIXQRErrorCode1 as PIXQRErrorCode, PIXQRCodeError1 as PIXQRCodeError, PIXPayloadRetriever1 as PIXPayloadRetriever, rootEMVSchema1 as rootEMVSchema, lookupNodeSchema1 as lookupNodeSchema };
+export function fixCRC(value) {
+    let $qr = document.getElementById('qr-string');
+    try {
+        let qr = PIXQRCode2.parseCode(value);
+        value = qr.emvQRCode.buildQRString();
+        $qr.value = value;
+        window.decodeCode(value);
+    } catch (E) {
+        showResult(null, handleQRError(E));
+    }
+}
+export function createCode(qrInfo) {
+    let qr = PIXQRCode2.createCode(qrInfo);
+    let $qr = document.getElementById('qr-string');
+    let value = qr.emvQRCode.buildQRString();
+    $qr.value = value;
+    window.decodeCode(value);
+}
 export async function decodeCode(value) {
     let qr;
     if (value.length) {
@@ -1394,22 +1445,4 @@ export async function fetchDynamic(value) {
         showResult(null, e);
         console.log("Fetch failed: " + e.message);
     }
-}
-export function fixCRC(value) {
-    let $qr = document.getElementById('qr-string');
-    try {
-        let qr = PIXQRCode2.parseCode(value);
-        value = qr.emvQRCode.buildQRString();
-        $qr.value = value;
-        decodeCode(value);
-    } catch (E) {
-        showResult(null, handleQRError(E));
-    }
-}
-export function createCode(qrInfo) {
-    let qr = PIXQRCode2.createCode(qrInfo);
-    let $qr = document.getElementById('qr-string');
-    let value = qr.emvQRCode.buildQRString();
-    $qr.value = value;
-    decodeCode(value);
 }

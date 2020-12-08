@@ -87,7 +87,7 @@
         </button>
         <button
           class="button is-secondary"
-          onclick="extractCode( document.getElementById('qr-string').value.trim()  );"
+          onclick="extractCode( document.getElementById('qr-string').value.trim() ); changeTab(document.getElementById('output').getElementsByTagName('li')[0])"
           placeholder="Extract"
         >
           Extract PIX
@@ -104,7 +104,7 @@
           onclick="fixCRC( document.getElementById('qr-string').value.trim() );"
           placeholder="Recalculate CRC"
         >
-          CRC
+          Fix CRC
         </button>
         <button
           id="btn-fetch-dynamic"
@@ -116,22 +116,51 @@
           Fetch URL
         </button>
       </div>
-      <div class="columns">
-        <div id="results" class="column">
-          <label for="decoded">Decoded QR</label>
-          <textarea
-            id="decoded"
-            style="
-              width: 100%;
-              height: 500px;
-              font-family: 'Courier New';
-              font-size: 16px;
-              font-weight: 800;
-            "
-          >
-          </textarea>
+      <div id="output">
+        <div class="tabs is-toggle is-medium is-fullwidth">
+          <ul>
+          <li class="is-active" onclick="changeTab(this)">
+            <a>
+              <span class="icon is-small"
+                ><i class="fab fa-js" aria-hidden="true"></i
+              ></span>
+              <span>JSON</span>
+            </a>
+          </li>
+          <li onclick="changeTab(this)">
+            <a>
+              <span class="icon is-small"
+                ><i
+                  class="fas fa-th-list"
+                  aria-hidden="true"
+                ></i
+              ></span>
+              <span>Tree</span>
+            </a>
+          </li>
+        </ul>
+        </div>
+        <div class="container">
+          <div class="content-tab">
+            <label for="decoded">Decoded QR</label>
+            <textarea
+              id="decoded"
+              style="
+                width: 100%;
+                height: 500px;
+                font-family: 'Courier New';
+                font-size: 16px;
+                font-weight: 800;
+              "
+            >
+            </textarea>
+          </div>
+          <div class="content-tab is-hidden">
+            <div id="qr-tree"></div>
+          </div>
         </div>
       </div>
+
     </section>
     <div class="columns container">
       <div class="column is-one-third">(c) Sean Wykes 2020</div>
@@ -156,7 +185,7 @@
         <section class="modal-card-body">
           <div class="tabs is-toggle is-medium is-fullwidth">
             <ul>
-            <li class="is-active" onclick="changeTab(0)">
+            <li class="is-active" onclick="changeTab(this, 0)">
               <a>
                 <span class="icon is-small"
                   ><i class="fas fa-money-check-alt" aria-hidden="true"></i
@@ -164,7 +193,7 @@
                 <span>Static</span>
               </a>
             </li>
-            <li onclick="changeTab(1)">
+            <li onclick="changeTab(this, 1)">
               <a>
                 <span class="icon is-small"
                   ><i
@@ -185,6 +214,15 @@
                   <input id="pix-chave" class="input" type="text" placeholder="Chave no DICT">
                   <span class="icon is-small is-left">
                     <i class="fas fa-key"></i>
+                  </span>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label">Amount</label>
+                <div class="control has-icons-left">
+                  <input id="pix-value" class="input" type="text" placeholder="Amount like 1.00">
+                  <span class="icon is-small is-left">
+                    <i class="fas fa-dollar-sign"></i>
                   </span>
                 </div>
               </div>
@@ -240,7 +278,7 @@
   </body>
 
   <script type="module">
-    import { PIX, EMVQR, PIXQRCode, rootEMVSchema } from "/js/pix-qrcode-wrapper.js";
+    import { PIX, EMVQR, PIXQRCode, rootEMVSchema, lookupNodeSchema } from "/js/pix-qrcode-wrapper.js";
 
     function createTable( el, hdrs ) {
       // Create a table element
@@ -280,14 +318,15 @@
       return trow;
     }
 
-    function renderQRTable( value ) {
+    function renderQRTable( $el, value ) {
       // Add the newly created table containing json data
-      var el = document.getElementById("results");
+      //var el = document.getElementById("output").firstElementChild.nextElementSibling;
       let qr = PIXQRCode.parseCode( value );
 
-      function render( el, qrn, schema ) {
-        let table = createTable( el, [ "", "ID", "EMV Name", "Len", "Value" ] );
-        let elementMap = schema?.elementMap;
+      function render( $el, qrn, schema ) {
+        let table = createTable( $el, [ "", "ID", "EMV Name", "Len", "Value" ] );
+
+        /*let elementMap = schema?.elementMap;
 
         if ( schema?.identifiedElementMap ) {
           if ( qrn.hasElement( EMVQR.TAG_TEMPLATE_GUI ) ) {
@@ -302,17 +341,19 @@
               }
             }
           }
-        }
+        }*/
 
         for( let nn of qrn.elements ) {
           const node = nn[1];
           let ch = ( node.isTemplate() ) ? "-" : "";
-          let nodeSchema = elementMap?.[ node.tag ] ?? { name: 'unknown', elementMap: {} };
+          //let nodeSchema = elementMap?.[ node.tag ] ?? { name: 'unknown', elementMap: {} };
+
+          let nodeSchema = lookupNodeSchema( schema, qrn, node.tag );
 
           let trow = insertRow( table, [ ch, node.tag, nodeSchema.name, node.content.length, node.content ] );
 
           if ( node.isTemplate() ) {
-            trow.firstChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
+            trow.firstElementChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
 
             // Create a new row
             trow = table.insertRow(-1);
@@ -332,11 +373,11 @@
       let elMap = rootEMVSchema.elementMap[26].identifiedElementMap = {};
       elMap[ PIX.GUI ] = {
         1: { name: "Chave PIX" },
-        2: { name: "Informações Adicionais"}
+        2: { name: "Informações Adicionais"},
         25: { name: "URL do Payload" }
       }
 
-      render( el, qrn, rootEMVSchema );
+      render( $el, qrn, rootEMVSchema );
     }
 
     function openCloseRow( el ) {
@@ -351,11 +392,9 @@
         row.firstChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
       }
     }
-    window.renderQRTable = renderQRTable;
+    //window.renderQRTable = renderQRTable;
     window.openCloseRow = openCloseRow;
-  </script>
 
-  <script type="module">
     var tabIndex = 0;
 
     function closePIXDialog( ok ) {
@@ -380,6 +419,7 @@
             merchantName: document.getElementById("pix-nome").value,
             txid: document.getElementById("pix-txid").value,
             infoAdicional: document.getElementById("pix-info-add").value,
+            value: document.getElementById("pix-value").value,
           };
           if ( ok && ( qrInfo.chave.length == 0 ) )
             return;
@@ -406,6 +446,8 @@
 
     function showPIXDialog( qrInfos ) {
       const $qrInfoModal = document.getElementById("qr-info-modal");
+      const $tabContainer = $qrInfoModal.getElementsByClassName("tabs")[0];
+      const $tabs = $tabContainer.getElementsByTagName("li")
 
       if ( !qrInfos ) {
         qrInfos = { type: "static" };
@@ -417,42 +459,49 @@
         document.getElementById("pix-txid").value = qrInfos.txid??"";
         document.getElementById("pix-info-add").value = qrInfos.infoAdicional??"";
 
-        changeTab( 0 );
+        document.getElementById("pix-value").value = qrInfos.value??"";
+
+        changeTab( $tabs[0] );
       }
       else {
         document.getElementById("pix-url").value = qrInfos.url??"";
-        changeTab( 1 );
+        changeTab( $tabs[1] );
       }
 
       $qrInfoModal.classList.add("is-active");
     }
 
-    function changeTab(tab) {
-      const $qrInfoModal = document.getElementById("qr-info-modal");
-      const $tabs = $qrInfoModal.getElementsByClassName("tabs")[0];
+    function changeTab( $selElement ) {
+      //const $qrInfoModal = document.getElementById("qr-info-modal");
+      //const $tabs = $qrInfoModal.getElementsByClassName("tabs")[0];
+      let $tabs = $selElement.parentNode.parentNode;
 
       let $tabList = $tabs.getElementsByTagName("li");
-      let $tabContentList = $qrInfoModal.getElementsByClassName("content-tab");
+      let $tabContentList = $tabs.nextElementSibling.getElementsByClassName("content-tab");
 
-      for (let $tab of $tabList) {
+      tabIndex = 0;
+
+      for ( let tab = 0; tab < $tabList.length; ++tab ) {
+        let $tab = $tabList[ tab ];
+
         $tab.classList.remove("is-active");
+        if ( $tab == $selElement ) {
+          tabIndex = tab;
+        }
       }
-      $tabList[tab].classList.add("is-active");
 
       for (let $tabContent of $tabContentList) {
         $tabContent.classList.add("is-hidden");
       }
-      $tabContentList[tab].classList.remove("is-hidden");
 
-      tabIndex = tab;
+      $tabContentList[tabIndex].classList.remove("is-hidden");
+      $tabList[tabIndex].classList.add("is-active");
     }
 
     window.changeTab = changeTab;
     window.showPIXDialog = showPIXDialog;
     window.closePIXDialog = closePIXDialog;
-  </script>
 
-  <script type="module">
     import {
       decodeCode,
       createCode,
@@ -461,11 +510,26 @@
       fetchDynamic,
     } from "/js/pix-qrcode-wrapper.js";
 
+    async function decodeToTree( qr ) {
+      const $qrInfoModal = document.getElementById("output");
+      const $tabContainer = $qrInfoModal.getElementsByClassName("tabs")[0];
+      const $tabs = $tabContainer.getElementsByTagName("li")
+
+      changeTab( $tabs[ 0 ] );
+      await decodeCode( qr );
+
+      renderQRTable( document.getElementById( 'qr-tree'), qr );
+      changeTab( $tabs[ 1 ] );
+    }
+
     window.decodeCode = decodeCode;
     window.createCode = createCode;
     window.extractCode = extractCode;
     window.fixCRC = fixCRC;
     window.fetchDynamic = fetchDynamic;
+
+    window.decodeCode = decodeToTree;
+
   </script>
   <script nomodule>
     alert(
@@ -477,9 +541,9 @@
     document.addEventListener(
       "DOMContentLoaded",
       () => {
-        let qrs = "00020101021226850014br.gov.bcb.pix2563pix.santander.com.br/qr/v2/b29bd384-c7cc-4156-8cae-4935c060c25252040000530398654040.025802BR5925ANA PAULA VIEIRA SALDANHA6009SAO PAULO62070503***63041C57";
+        //let qrs = "00020101021226850014br.gov.bcb.pix2563pix.santander.com.br/qr/v2/b29bd384-c7cc-4156-8cae-4935c060c25252040000530398654040.025802BR5925ANA PAULA VIEIRA SALDANHA6009SAO PAULO62070503***63041C57";
 
-        renderQRTable(qrs /*&& document.getElementById("qr-string").value.trim()*/);
+        //renderQRTable(qrs /*&& document.getElementById("qr-string").value.trim()*/);
       },
       false
     );

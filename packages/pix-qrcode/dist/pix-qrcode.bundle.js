@@ -119,6 +119,24 @@ class RuleValidator {
         return this.result;
     }
 }
+class EMVQR {
+    static TAG_INIT = 0;
+    static TAG_CRC = 63;
+    static TAG_MAX = 99;
+    static TAG_POI_METHOD = 2;
+    static TAG_MCC = 52;
+    static TAG_TRANSACTION_CURRENCY = 53;
+    static TAG_TRANSACTION_AMOUNT = 54;
+    static TAG_COUNTRY_CODE = 58;
+    static TAG_MERCHANT_NAME = 59;
+    static TAG_MERCHANT_CITY = 60;
+    static MAI_STANDARD_FIRST = 2;
+    static MAI_TEMPLATE_FIRST = 26;
+    static MAI_TEMPLATE_LAST = 51;
+    static TAG_TEMPLATE_GUI = 0;
+    static TAG_ADDITIONAL_DATA = 62;
+    static TAG_AD_REF_LABEL = 5;
+}
 var QRErrorCode;
 (function(QRErrorCode1) {
     QRErrorCode1[QRErrorCode1["INVALID_PARAM"] = 0] = "INVALID_PARAM";
@@ -129,30 +147,14 @@ var QRErrorCode;
 })(QRErrorCode || (QRErrorCode = {
 }));
 const mandatoryElements = [
-    0,
-    52,
-    53,
-    58,
-    59,
-    60,
-    63
+    EMVQR.TAG_INIT,
+    EMVQR.TAG_MCC,
+    EMVQR.TAG_TRANSACTION_CURRENCY,
+    EMVQR.TAG_COUNTRY_CODE,
+    EMVQR.TAG_MERCHANT_NAME,
+    EMVQR.TAG_MERCHANT_CITY,
+    EMVQR.TAG_CRC
 ];
-class EMVQR {
-    static TAG_INIT = 0;
-    static TAG_CRC = 63;
-    static TAG_MAX = 99;
-    static TAG_MCC = 52;
-    static TAG_TRANSACTION_CURRENCY = 53;
-    static TAG_TRANSACTION_AMOUNT = 54;
-    static TAG_COUNTRY_CODE = 58;
-    static TAG_MERCHANT_NAME = 59;
-    static TAG_MERCHANT_CITY = 60;
-    static MAI_TEMPLATE_FIRST = 26;
-    static MAI_TEMPLATE_LAST = 51;
-    static TAG_TEMPLATE_GUI = 0;
-    static TAG_ADDITIONAL_DATA = 62;
-    static TAG_AD_REF_LABEL = 5;
-}
 const paymentSystemSpecificTemplateMap = {
     0: {
         name: 'Globally Unique Identifier',
@@ -374,6 +376,39 @@ const rootEMVSchema = {
     name: 'root',
     elementMap: rootSchemaMap
 };
+function lookupNodeSchema(schema, node, tag) {
+    let elementMap = schema?.elementMap;
+    if (schema?.identifiedElementMap) {
+        if (node.hasElement(EMVQR.TAG_TEMPLATE_GUI)) {
+            let gui = node.getElement(EMVQR.TAG_TEMPLATE_GUI).content.toUpperCase();
+            for(let xx in schema.identifiedElementMap){
+                if (xx.toUpperCase() == gui) {
+                    elementMap = {
+                        ...elementMap,
+                        ...schema.identifiedElementMap[xx]
+                    };
+                }
+            }
+        }
+    }
+    let nodeSchema = {
+        name: 'Unknown',
+        elementMap: {
+        }
+    };
+    if (elementMap?.[tag]) {
+        nodeSchema = elementMap[tag];
+    } else {
+        for(let xx in elementMap){
+            let elTag = parseInt(xx);
+            let el = elementMap[elTag];
+            if (tag >= elTag && el.lastTag && tag <= el.lastTag) {
+                nodeSchema = el;
+            }
+        }
+    }
+    return nodeSchema;
+}
 const defaultParams1 = {
     encoding: 'utf8'
 };
@@ -571,21 +606,6 @@ function validateElement(val, schema, path) {
     if (schema.pattern != undefined) {
         let pattern = schema.pattern instanceof RegExp ? schema.pattern : new RegExp(schema.pattern);
         if (!pattern.test(val)) throw new QRCodeError(QRErrorCode.INVALID_ELEMENT, `Element ${path} has invalid contents`);
-    }
-}
-function validateNode(node, schema, path = "") {
-    if (node.isType('data')) {
-        validateElement(node.content, schema, path);
-    } else {
-        node.elements.forEach((element)=>{
-            let nodeSchema = schema?.elementMap?.[element.tag] ?? {
-                name: 'unknown',
-                elementMap: {
-                }
-            };
-            let elementPath = path + (path.length ? ":" : "") + ("00" + element.tag).slice(-2);
-            validateNode(element, nodeSchema, elementPath);
-        });
     }
 }
 function computeCRC(str, invert = false) {
@@ -859,6 +879,17 @@ function computeCRC(str, invert = false) {
     if (invert) return hex.slice(2) + hex.slice(0, 2);
     return hex;
 }
+function validateNode(node, schema, path = "") {
+    if (node.isType('data')) {
+        validateElement(node.content, schema, path);
+    } else {
+        node.elements.forEach((element)=>{
+            let nodeSchema = lookupNodeSchema(schema, node, element.tag);
+            let elementPath = path + (path.length ? ":" : "") + ("00" + element.tag).slice(-2);
+            validateNode(element, nodeSchema, elementPath);
+        });
+    }
+}
 function getRuleValidator1() {
     return RuleValidator.get({
         id: "EMVQR"
@@ -877,7 +908,7 @@ function getRuleValidator1() {
         id: "final-element-63",
         description: "Final element is CRC '63'",
         rule: (root, _val)=>{
-            let crcEl = root.getElement(63);
+            let crcEl = root.getElement(EMVQR.TAG_CRC);
             if (crcEl.baseOffset != root.content.length - 8 || root.content.slice(-8, -4) != '6304') {
                 throw new QRCodeError(QRErrorCode.INVALID_QRCODE, "CRC must be final element (63)");
             }
@@ -886,7 +917,7 @@ function getRuleValidator1() {
         id: "valid-crc",
         description: "CRC is valid",
         rule: (root, _val)=>{
-            let crcEl = root.getElement(63);
+            let crcEl = root.getElement(EMVQR.TAG_CRC);
             let calculatedCRC = computeCRC(root.content.slice(0, -4));
             if (calculatedCRC != crcEl.content) {
                 throw new QRCodeError(QRErrorCode.CRC_MISMATCH, "Invalid CRC");
@@ -1089,7 +1120,7 @@ class EMVMerchantQRCode extends QRCodeNode {
             root.newDataElement(EMVQR.TAG_COUNTRY_CODE, basicElements.countryCode);
             root.newDataElement(EMVQR.TAG_MERCHANT_NAME, basicElements.merchantName);
             root.newDataElement(EMVQR.TAG_MERCHANT_CITY, basicElements.merchantCity);
-            if (basicElements.oneTime) root.newDataElement(2, "12");
+            if (basicElements.oneTime) root.newDataElement(EMVQR.TAG_POI_METHOD, "12");
             if (basicElements.transactionAmount) root.newDataElement(EMVQR.TAG_TRANSACTION_AMOUNT, basicElements.transactionAmount.toFixed(2));
         }
         return root;
@@ -1129,7 +1160,7 @@ class EMVMerchantQRCode extends QRCodeNode {
             merchantName: getDataElement(EMVQR.TAG_MERCHANT_NAME),
             merchantCity: getDataElement(EMVQR.TAG_MERCHANT_CITY),
             transactionAmount: parseFloat(getDataElement(EMVQR.TAG_TRANSACTION_AMOUNT)),
-            oneTime: getDataElement(2) == '12'
+            oneTime: getDataElement(EMVQR.TAG_POI_METHOD) == '12'
         };
         return basicElements;
     }

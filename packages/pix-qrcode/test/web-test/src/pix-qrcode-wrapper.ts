@@ -1,6 +1,6 @@
-import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, PIXQRCodeElements, PIX, EMVQR, rootEMVSchema } from "./deps.ts";
+import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, PIXQRCodeElements, PIX, EMVQR, rootEMVSchema, lookupNodeSchema } from "./deps.ts";
 
-export { PIX, EMVQR, PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, rootEMVSchema };
+export { PIX, EMVQR, PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, rootEMVSchema, lookupNodeSchema };
 
 var document = (window as any).document, QRious = (window as any).QRious; // , prompt = (window as any).prompt;
 
@@ -18,13 +18,14 @@ function handleQRError( E: Error ) {
 }
 
 function showResult( success?: string | null, error?: string ) {
+  let elOutput = document.getElementById('decoded');
   let elDecoded = document.getElementById('decoded');
   let elStatus = document.getElementById('qr-status');
 
   elStatus.classList.remove("has-background-danger");
   elStatus.classList.remove('has-text-secondary');
   elStatus.classList.remove("has-background-info");
-  elDecoded.classList.remove( 'is-hidden' );
+  elOutput.classList.remove( 'is-hidden' );
 
   if ( error && error.length > 0 ) {
     elStatus.value = error;
@@ -38,7 +39,7 @@ function showResult( success?: string | null, error?: string ) {
   }
   else {
     elStatus.value = '';
-    elDecoded.classList.add( 'is-hidden' );
+    elOutput.classList.add( 'is-hidden' );
   }
 }
 
@@ -52,7 +53,7 @@ export function fixCRC( value: string ) {
 
     $qr.value = value;
 
-    decodeCode( value );
+    (window as any).decodeCode( value );
   }
   catch( E ) {
     showResult( null, handleQRError( E ) );
@@ -69,7 +70,7 @@ export function createCode( qrInfo: PIXQRCodeElements ) {
 
   $qr.value = value;
 
-  decodeCode( value );
+  (window as any).decodeCode( value );
 }
 
 let $qrImage: any;

@@ -116,24 +116,6 @@ export class PIXQRCode {
     let emvQR = this.emvQRCode
     let basicElements = emvQR.extractElements();
 
-/*    function getDataElement( tag: number ): string {
-      if ( emvQR.hasElement( tag ) ) {
-        return emvQR.getElement( tag ).content;
-      }
-
-      return "";
-    }
-
-
-    let basicElements: EMVQRCodeBasicElements = {
-      merchantCategoryCode: getDataElement( EMVQR.TAG_MCC ),
-      transactionCurrency: parseInt(getDataElement( EMVQR.TAG_TRANSACTION_CURRENCY ) ),
-      transactionAmount: parseFloat( getDataElement( EMVQR.TAG_TRANSACTION_AMOUNT ) ),
-      countryCode: getDataElement( EMVQR.TAG_COUNTRY_CODE ),
-      merchantName: getDataElement( EMVQR.TAG_MERCHANT_NAME ),
-      merchantCity: getDataElement( EMVQR.TAG_MERCHANT_CITY ),
-    }*/
-
     if ( this.isPIX( 'static') ) {
       return {
         type: 'static',

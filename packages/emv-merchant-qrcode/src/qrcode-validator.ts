@@ -1,5 +1,6 @@
 import { RuleValidator, ValidationError } from './deps.ts';
-import { QRSchemaElement, rootEMVSchema } from './element-scheme.ts';
+import { EMVQR } from './emv-qrcode-tags.ts';
+import { QRSchemaElement, rootEMVSchema, lookupNodeSchema } from './element-scheme.ts';
 import { QRCodeNode } from './qrcode-node.ts';
 import { computeCRC } from './crc.ts';
 
@@ -20,13 +21,13 @@ export class QRCodeError extends ValidationError<QRErrorCode> {
 }
 
 const mandatoryElements: number[] = [
-  0,    // Start
-  52,
-  53,
-  58,
-  59,
-  60,
-  63    // CRC
+  EMVQR.TAG_INIT,    // Start
+  EMVQR.TAG_MCC,
+  EMVQR.TAG_TRANSACTION_CURRENCY,
+  EMVQR.TAG_COUNTRY_CODE,
+  EMVQR.TAG_MERCHANT_NAME,
+  EMVQR.TAG_MERCHANT_CITY,
+  EMVQR.TAG_CRC    // CRC
 ];
 
 function validateElement( val: string|undefined, schema: QRSchemaElement, path: string ) {
@@ -74,7 +75,7 @@ function validateNode( node: QRCodeNode, schema: QRSchemaElement, path: string =
   }
   else {
     node.elements.forEach( (element: QRCodeNode ) => {
-      let nodeSchema: QRSchemaElement = schema?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
+      let nodeSchema: QRSchemaElement = lookupNodeSchema( schema, node, element.tag! );
 
       let elementPath = path + (path.length ? ":" : "") + ("00"+element.tag!).slice( -2 );
 
@@ -104,7 +105,7 @@ export function getRuleValidator(): RuleValidator<QRCodeNode> {
         id: "final-element-63",
         description: "Final element is CRC '63'",
         rule: ( root, _val ) => {
-          let crcEl = root.getElement( 63 );
+          let crcEl = root.getElement( EMVQR.TAG_CRC );
 
           if ( ( crcEl.baseOffset != root.content.length - 8 ) || ( root.content.slice(-8,-4) != '6304') ) {
             throw new QRCodeError( QRErrorCode.INVALID_QRCODE, "CRC must be final element (63)" );
@@ -116,7 +117,7 @@ export function getRuleValidator(): RuleValidator<QRCodeNode> {
         id: "valid-crc",
         description: "CRC is valid",
         rule: ( root, _val ) => {
-          let crcEl = root.getElement( 63 );
+          let crcEl = root.getElement( EMVQR.TAG_CRC );
 
           // 3. CRC Correct
           let calculatedCRC = computeCRC( root.content.slice( 0, -4 ) );

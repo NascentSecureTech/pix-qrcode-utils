@@ -1,6 +1,7 @@
 import * as base64 from "https://deno.land/x/base64/mod.ts";
 import { ValidationObserver } from './deps.ts';
-import { QRCodeNode, EMVQR } from './qrcode-node.ts';
+import { EMVQR } from './emv-qrcode-tags.ts';
+import { QRCodeNode } from './qrcode-node.ts';
 import { getRuleValidator } from './qrcode-validator.ts';
 import { computeCRC } from './crc.ts';
 import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
@@ -77,7 +78,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
       root.newDataElement( EMVQR.TAG_MERCHANT_CITY, basicElements.merchantCity );
 
       if ( basicElements.oneTime )
-        root.newDataElement( 2, "12" );
+        root.newDataElement( EMVQR.TAG_POI_METHOD, "12" );
 
       if ( basicElements.transactionAmount )
         root.newDataElement( EMVQR.TAG_TRANSACTION_AMOUNT, basicElements.transactionAmount.toFixed(2) );
@@ -141,7 +142,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
       merchantCity: getDataElement( EMVQR.TAG_MERCHANT_CITY ),
 
       transactionAmount: parseFloat( getDataElement( EMVQR.TAG_TRANSACTION_AMOUNT ) ),
-      oneTime: getDataElement( 2 ) == '12'
+      oneTime: getDataElement( EMVQR.TAG_POI_METHOD ) == '12'
     }
 
     return basicElements;
