@@ -406,33 +406,48 @@
         merchantCategoryCode: "0000",
         transactionCurrency: 986,
         countryCode: "BR",
-        merchantCity: "Porto Alegre",
-        merchantName: "PIX"
+        merchantName: "PIX",
+        merchantCity: "Cidade",
+        txid: "***",
       }
+
+      const nullable = (s) => ( ( s == '' ) ? undefined : s );
+      const cleanup = (obj) => Object.entries(obj).reduce((a,[k,v]) => (v === undefined ? a : (a[k]=v, a)), {})
 
       switch( tabIndex ) {
         case 0: // static
+          const staticFields = {
+            chave: nullable( document.getElementById("pix-chave").value ),
+            merchantName: nullable( document.getElementById("pix-nome").value ),
+            txid: nullable( document.getElementById("pix-txid").value ),
+            infoAdicional: nullable( document.getElementById("pix-info-add").value ),
+            value: nullable( document.getElementById("pix-value").value ),
+          };
+
+
           qrInfo = {
             type: "static",
             ...defs,
-            chave: document.getElementById("pix-chave").value,
-            merchantName: document.getElementById("pix-nome").value,
-            txid: document.getElementById("pix-txid").value,
-            infoAdicional: document.getElementById("pix-info-add").value,
-            value: document.getElementById("pix-value").value,
-          };
-          if ( ok && ( qrInfo.chave.length == 0 ) )
+            ...cleanup(staticFields),
+          }
+
+          if ( ok && ( qrInfo.chave == undefined ) )
             return;
           break;
 
 
         case 1: // dynamic
+          const dynamicFields = {
+            url: nullable( document.getElementById("pix-url").value ),
+          };
+
           qrInfo = {
             type: "dynamic",
             ...defs,
-            url: document.getElementById("pix-url").value,
+            ...cleanup(dynamicFields),
           };
-          if ( ok && ( qrInfo.url.length == 0 ) )
+
+          if ( ok && ( qrInfo.url == undefined ) )
             return;
           break;
       }
