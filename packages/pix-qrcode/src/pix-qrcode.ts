@@ -15,6 +15,9 @@ export interface PIXDynamicElements extends EMVQRCodeBasicElements {
 
   //
   url: string;
+
+  // PIX v2 - must be "***"
+  txid?: string;
 }
 
 export interface PIXStaticElements extends EMVQRCodeBasicElements {
@@ -66,14 +69,16 @@ export class PIXQRCode {
       if ( elements.infoAdicional )
         maiPIX.newDataElement( PIX.TAG_MAI_INFO_ADD, elements.infoAdicional );
 
-      if ( elements.txid ) {
-        let el62 = emvQRCode.newTemplateElement( EMVQR.TAG_ADDITIONAL_DATA );
-
-        el62.newDataElement( EMVQR.TAG_AD_REF_LABEL, elements.txid );
-      }
     } else {
       if ( elements.url )
         maiPIX.newDataElement( PIX.TAG_MAI_URL, elements.url );
+
+    }
+
+    if ( elements.txid ) {
+      let el62 = emvQRCode.newTemplateElement( EMVQR.TAG_ADDITIONAL_DATA );
+
+      el62.newDataElement( EMVQR.TAG_AD_REF_LABEL, elements.txid );
     }
 
     return pixQRCode;

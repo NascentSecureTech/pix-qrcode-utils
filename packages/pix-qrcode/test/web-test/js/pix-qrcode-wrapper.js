@@ -1294,12 +1294,12 @@ class PIXQRCode2 {
         if (elements.type == "static") {
             if (elements.chave) maiPIX.newDataElement(PIX2.TAG_MAI_CHAVE, elements.chave);
             if (elements.infoAdicional) maiPIX.newDataElement(PIX2.TAG_MAI_INFO_ADD, elements.infoAdicional);
-            if (elements.txid) {
-                let el62 = emvQRCode1.newTemplateElement(EMVQR2.TAG_ADDITIONAL_DATA);
-                el62.newDataElement(EMVQR2.TAG_AD_REF_LABEL, elements.txid);
-            }
         } else {
             if (elements.url) maiPIX.newDataElement(PIX2.TAG_MAI_URL, elements.url);
+        }
+        if (elements.txid) {
+            let el62 = emvQRCode1.newTemplateElement(EMVQR2.TAG_ADDITIONAL_DATA);
+            el62.newDataElement(EMVQR2.TAG_AD_REF_LABEL, elements.txid);
         }
         return pixQRCode;
     }
