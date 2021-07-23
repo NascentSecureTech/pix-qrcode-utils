@@ -18,7 +18,7 @@ export interface ListCobParams {
   loteCobvId?: Number;
 }
 
-export interface ListCobPagedParams extends ListCobParams {
+export interface PagedListCobParams extends ListCobParams {
   //
-  paginacao: Paginacao;
+  paginacao?: Paginacao;
 }

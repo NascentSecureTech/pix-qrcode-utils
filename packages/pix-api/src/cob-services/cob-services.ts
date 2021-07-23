@@ -1,6 +1,6 @@
 import {
-  Cobranca,
-  ListCobParams,
+  Cobranca,PartialCobranca,
+  PagedListCobParams,
   /*Status, */Paginacao, Paginado,
 } from "../schemas/mod.ts";
 import { CobType } from "../schemas/mod.ts";
@@ -76,7 +76,7 @@ export class PixApiCobService {
     return cob;
   }
 
-  async patchCob(id: CobIdentifier, newCob: Cobranca): Promise<Cobranca> {
+  async patchCob(id: CobIdentifier, diffCob: PartialCobranca): Promise<Cobranca> {
     const existingCob = await this.dataStore.read(this.#context, id);
 
     if (!existingCob) {
@@ -85,7 +85,15 @@ export class PixApiCobService {
 
     const cob: Cobranca = {
       ...existingCob,
-      ...newCob,
+      ...diffCob,
+      devedor: {
+        ...existingCob.devedor,
+        ...diffCob.devedor
+      },
+      valor: {
+        ...existingCob.valor,
+        ...diffCob.valor,
+      },
       revisao: existingCob.revisao! + 1,
     };
 
@@ -94,8 +102,8 @@ export class PixApiCobService {
     return cob;
   }
 
-  async listCobs(
-    params: ListCobParams & { paginacao: Paginacao },
+  async getCobs(
+    params: PagedListCobParams,
     id: CobListIdentifier
   ): Promise<Paginado<Cobranca>> {
     const list = this.dataStore.list(this.#context, id, params);

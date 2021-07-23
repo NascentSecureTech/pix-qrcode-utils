@@ -1,7 +1,7 @@
 import { Location, CobType } from "../../../pix-api/src/mod.ts";
 import {
   DBContext,
-  APIClient,
+  APIClientID,
   ILocDataStore,
   LocIdentifier,
 } from "../../../pix-api/src/mod.ts";
@@ -20,9 +20,13 @@ export class MemoryLocStore implements ILocDataStore {
   }
 
   //
+  constructor( public readonly baseUrl: string ) {
+  }
+
+  //
   async newID(
     _context: DBContext,
-    id: APIClient,
+    id: APIClientID,
     locType: CobType
   ): Promise<number> {
 
@@ -32,7 +36,7 @@ export class MemoryLocStore implements ILocDataStore {
       id: nextID,
       tipoLoc: locType,
       criacao: new Date(),
-      location: nextID.toString()
+      location: `${this.baseUrl}/${nextID.toString()}`
     }
 
     const idx: LocIdentifier = {

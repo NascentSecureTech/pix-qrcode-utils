@@ -1,10 +1,10 @@
 import { Location, CobType } from '../schemas/mod.ts';
 
 import { DBContext } from './db.ts';
-import { APIClient } from './api-client.ts';
+import { APIClientID } from './api-client-id.ts';
 
 //
-export interface LocIdentifier extends APIClient {
+export interface LocIdentifier extends APIClientID {
   id: number;
   cobType: CobType;
 }
@@ -12,7 +12,7 @@ export interface LocIdentifier extends APIClient {
 //
 export interface ILocDataStore {
   //
-  newID( context: DBContext, client: APIClient, cobType: CobType ): Promise<number>;
+  newID( context: DBContext, client: APIClientID, cobType: CobType ): Promise<number>;
   //
   //list( context: DBContext, id: CobListIdentifier, params: ListCobParams, paginacao?: Paginacao ): Promise<Paginado<Cobranca>>;
   //

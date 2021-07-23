@@ -3,15 +3,15 @@ import { ListCobParams } from '../schemas/mod.ts';
 import { Paginacao, Paginado } from '../schemas/mod.ts';
 
 import { DBContext } from './db.ts';
-import { APIClient } from './api-client.ts';
+import { APIClientID } from './api-client-id.ts';
 
 //
-export interface CobIdentifier extends APIClient {
+export interface CobIdentifier extends APIClientID {
   txid: string;
   cobType: CobType;
 }
 
-export interface CobListIdentifier extends APIClient {
+export interface CobListIdentifier extends APIClientID {
   cobType: CobType;
 }
 

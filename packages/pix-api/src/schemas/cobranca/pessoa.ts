@@ -16,11 +16,11 @@ export interface PessoaJuridica {
 //
 export interface Endereco {
   //
-  logradouro: string;
+  logradouro?: string;
   //
-  cidade:     string;
+  cidade?:     string;
   //
-  uf:         string;
+  uf?:         string;
   //
-  cep:        string;
+  cep?:        string;
 }

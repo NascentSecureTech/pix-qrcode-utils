@@ -1,9 +1,11 @@
 //
 export interface ValorDesconto {
   //
-  modalidade:       string;
+  modalidade?:       number;
   //
-  descontoDataFixa: DescontoDataFixa[];
+  descontoDataFixa?: DescontoDataFixa[];
+  //
+  valorPerc?:  number;
 }
 
 //
@@ -11,21 +13,21 @@ export interface DescontoDataFixa {
   //
   data:      Date;
   /** Desconto em valor absoluto ou percentual por dia, útil ou corrido, conforme valor.desconto.modalidade */
-  valorPerc: string;
+  valorPerc: number;
 }
 
 //
 export interface ModalidadeValorPerc {
   //
-  modalidade: string;
+  modalidade: number;
   //
-  valorPerc:  string;
+  valorPerc:  number;
 }
 
 //
 export interface Valor {
   /** Valor original da cobrança. */
-  original: string;
+  original: number;
 
   /** Campo determina se o valor final do documento pode ser alterado pelo pagador. Na ausência desse campo, assume-se que não se pode alterar o valor do do
   cumento de cobrança, ou seja, assume-se o valor 0. Se o campo estiver presente e com valor 1, então está determinado que o valor final da cobrança pode ter seu valor alterado pelo
@@ -48,20 +50,20 @@ export interface Valor {
 //
 export interface ValorFinal {
   /** Valor original da cobrança. */
-  original?: string;
+  original?: number;
 
   /** Multa aplicada à cobrança */
-  multa?: string;
+  multa?: number;
 
   /** Juro aplicado à cobrança */
-  juros?: string;
+  juros?: number;
 
   /** Abatimento aplicado à cobrança */
-  abatimento?: string;
+  abatimento?: number;
 
   /** Descontos aplicados à cobrança */
-  desconto?: string;
+  desconto?: number;
 
   /** Valor final da cobrança. */
-  final: string;
+  final: number;
 }

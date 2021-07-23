@@ -1,5 +1,5 @@
 //
-export interface APIClient {
+export interface APIClientID {
   //
   client_id: string;
 

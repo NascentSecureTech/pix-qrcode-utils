@@ -3,7 +3,7 @@ import {
   Cobranca, CobType, Status,
   CobIdentifier, CobListIdentifier,
   PixApiCobService,
-  ListCobPagedParams, Paginacao,
+  PagedListCobParams, Paginacao,
 } from "../../../pix-api/src/mod.ts";
 import { MemoryCobStore } from "./memory-cob-data-store.ts";
 import { MemoryLocStore } from "./memory-loc-data-store.ts";
@@ -27,7 +27,10 @@ export function cobRouter(
   cobType: CobType,
   path: string = ""
 ): void {
-  const cobService = new PixApiCobService(new MemoryCobStore(), new MemoryLocStore(), cobType);
+  const locStore = new MemoryLocStore("localhost:9666/pix/qr/");
+  const cobStore = new MemoryCobStore();
+
+  const cobService = new PixApiCobService(cobStore, locStore, cobType);
 
   router
     .get(path + "/" + cobType, async (context) => {
@@ -41,7 +44,7 @@ export function cobRouter(
         itensPorPagina: isPresent(pag.itensPorPagina) ? convertInteger(pag.itensPorPagina) : 100,
       };
 
-      const pagedListParams: ListCobPagedParams = {
+      const pagedListParams: PagedListCobParams = {
         inicio: convertDate(rawParams.inicio ?? ""),
         fim: convertDate(rawParams.fim ?? ""),
         cpf: rawParams.cpf,
@@ -61,7 +64,7 @@ export function cobRouter(
         client_id: "0",
       };
 
-      let pagedList = await cobService.listCobs( pagedListParams, id );
+      let pagedList = await cobService.getCobs( pagedListParams, id );
       let cobs = pagedList.items;
       delete pagedList.items
 
@@ -101,6 +104,26 @@ export function cobRouter(
 
         console.log("writing to cobService");
         const cobOut = await cobService.putCob(id, cobIn);
+
+        context.response.body = cobOut;
+      } catch (e) {
+        context.response.status = 404;
+      }
+    })
+    .patch(path + "/" + cobType + "/:txid", async (context) => {
+      const { txid } = getRouteParams(context);
+      console.log(txid);
+
+      const cobIn = await getBodyJSON<Cobranca>(context);
+      try {
+        const id: CobIdentifier = {
+          txid,
+          cobType,
+          client_id: "0",
+        };
+
+        console.log("writing to cobService");
+        const cobOut = await cobService.patchCob(id, cobIn);
 
         context.response.body = cobOut;
       } catch (e) {

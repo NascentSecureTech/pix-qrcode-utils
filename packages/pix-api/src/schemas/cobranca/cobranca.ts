@@ -1,6 +1,6 @@
 import { Calendario } from './calendario.ts';
 import { Pessoa, Endereco } from './pessoa.ts';
-import { Valor } from './valor.ts';
+import { Valor, ValorDesconto } from './valor.ts';
 import { Location } from './location.ts';
 import { InfoAdicional } from './info-adicional.ts';
 import { Status } from './status.ts';
@@ -42,4 +42,34 @@ a ao recebedor. */
 
   //
   valor: Valor;
+}
+
+export interface PartialValor extends Partial<Omit<Valor,"desconto">> {
+  desconto?: Partial<ValorDesconto>;
+}
+
+export interface PartialCobranca  {
+  //
+  calendario?: Partial<Calendario>;
+
+  //
+  chave?: string;
+
+  //
+  devedor?: Partial<Pessoa & Endereco>;
+
+  //
+  infoAdicionais?: InfoAdicional[];
+
+  //
+  loc?: Location;
+
+  //
+  recebedor?: Partial<Pessoa & Endereco>;
+
+  //
+  solicitacaoPagador?: string;
+
+  //
+  valor?: PartialValor;
 }
