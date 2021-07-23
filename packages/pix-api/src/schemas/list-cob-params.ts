@@ -18,21 +18,7 @@ export interface ListCobParams {
   loteCobvId?: Number;
 }
 
-export interface ListCobPagedParams {
-  //
-  inicio: Date;
-  //
-  fim: Date;
-  //
-  cpf?: string;
-  //
-  cnpj?: string;
-  //
-  locationPresente?: boolean;
-  //
-  status?: Status;
-  //
-  loteCobvId?: Number;
+export interface ListCobPagedParams extends ListCobParams {
   //
   paginacao: Paginacao;
 }

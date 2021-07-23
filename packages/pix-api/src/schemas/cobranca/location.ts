@@ -1,11 +1,11 @@
 //
-export type TipoCob = 'cob'|'cobv';
+export type CobType = 'cob'|'cobv';
 
 //
 export interface Location {
-  id: Number;
+  id: number;
   txid?: string;
   location: string;
-  tipoLoc: TipoCob;
+  tipoLoc: CobType;
   criacao?: Date;
 }
