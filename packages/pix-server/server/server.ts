@@ -1,5 +1,6 @@
 import { Application, send } from "https://deno.land/x/oak/mod.ts";
-import { sleep } from "https://deno.land/x/sleep/mod.ts";
+//import { sleep } from "https://deno.land/x/sleep/mod.ts";
+import { apiRouter } from './api-pix-server/api-pix-server.ts';
 
 const app = new Application();
 
@@ -9,12 +10,12 @@ app.use(async (context, next) => {
       await next();
     }
     else {
-      let remoteUrl = context.request.url.searchParams.get('url');
+      const remoteUrl = context.request.url.searchParams.get('url');
 
       console.log( "URL = ", remoteUrl);
 
       if ( remoteUrl ) {
-        let response = (await fetch( remoteUrl, { mode: 'cors' } ) );
+        const response = (await fetch( remoteUrl, { mode: 'cors' } ) );
 
         context.response.status = response.status;
         context.response.type = response.type;
@@ -29,12 +30,17 @@ app.use(async (context, next) => {
   }
 });
 
-app.use(async (context) => {
+const api = apiRouter();
+
+app.use( api.routes(), api.allowedMethods() );
+
+/*app.use(async (context) => {
 
   console.log( "Got Req:", context.request.url);
+  console.log( "Headers: " ); context.request.headers.forEach( (v,k) => { console.log( k + ': ' + v ); } );
 
   try {
-    await sleep( 60 );
+    //await sleep( 60 );
 
     await send(context, context.request.url.pathname, {
       root: `${Deno.cwd()}/public`,
@@ -44,6 +50,6 @@ app.use(async (context) => {
   catch( E ) {
     console.log( "Error: ", E );
   }
-});
+});*/
 
 await app.listen({ port: 9666 });

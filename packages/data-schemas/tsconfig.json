@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "moduleResolution": "Classic",
+    "plugins": [
+      {
+        "name": "typescript-deno-plugin"
+      }
+    ]
+  }
+}

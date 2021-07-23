@@ -35,6 +35,16 @@ export interface PIXStaticElements extends EMVQRCodeBasicElements {
 
 export type PIXQRCodeElements = PIXStaticElements | PIXDynamicElements;
 
+const defaultPIXCodeElements = {
+  merchantCategoryCode: "0000",
+  transactionCurrency: 986,
+  countryCode: "BR",
+  merchantName: "PIX",
+  merchantCity: "Cidade",
+  txid: "***",
+}
+
+
 const defaultParams: EMVMerchantQRParams = {
   encoding: 'utf8',
 }
@@ -55,31 +65,34 @@ export class PIXQRCode {
   }
 
   static createCode( elements: PIXQRCodeElements ): PIXQRCode {
-    let pixQRCode = new PIXQRCode( EMVMerchantQRCode.createCode( elements ) );
+    const cleanupObject = ( obj: Record<string,any> ) => Object.entries(obj).reduce((a,[k,v]) => (v === undefined ? a : (a[k]=v, a)), {} as any )
+
+    let pixElements: PIXQRCodeElements = {
+      ...defaultPIXCodeElements,
+      ...cleanupObject( elements )
+    }
+    let pixQRCode = new PIXQRCode( EMVMerchantQRCode.createCode( pixElements ) );
     let emvQRCode = pixQRCode.emvQRCode;
 
     let guiNode = new QRCodeNode( 'data', PIX.GUI, EMVQR.TAG_TEMPLATE_GUI );
 
     const maiPIX = emvQRCode.newTemplateElement( EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST, true, [ guiNode ] );
 
-    if ( elements.type == "static" ) {
-      if ( elements.chave )
-        maiPIX.newDataElement( PIX.TAG_MAI_CHAVE, elements.chave );
+    if ( pixElements.type == "static" ) {
+      if ( pixElements.chave )
+        maiPIX.newDataElement( PIX.TAG_MAI_CHAVE, pixElements.chave );
 
-      if ( elements.infoAdicional )
-        maiPIX.newDataElement( PIX.TAG_MAI_INFO_ADD, elements.infoAdicional );
+      if ( pixElements.infoAdicional )
+        maiPIX.newDataElement( PIX.TAG_MAI_INFO_ADD, pixElements.infoAdicional );
 
     } else {
-      if ( elements.url )
-        maiPIX.newDataElement( PIX.TAG_MAI_URL, elements.url );
+      if ( pixElements.url )
+        maiPIX.newDataElement( PIX.TAG_MAI_URL, pixElements.url );
 
     }
 
-    if ( elements.txid ) {
-      let el62 = emvQRCode.newTemplateElement( EMVQR.TAG_ADDITIONAL_DATA );
-
-      el62.newDataElement( EMVQR.TAG_AD_REF_LABEL, elements.txid );
-    }
+    let el62 = emvQRCode.newTemplateElement( EMVQR.TAG_ADDITIONAL_DATA );
+    el62.newDataElement( EMVQR.TAG_AD_REF_LABEL, pixElements.txid ?? "***" );
 
     return pixQRCode;
   }

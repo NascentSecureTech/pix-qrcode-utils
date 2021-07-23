@@ -5,7 +5,7 @@ import { QRCodeNode } from './qrcode-node.ts';
 import { getRuleValidator } from './qrcode-validator.ts';
 import { computeCRC } from './crc.ts';
 import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
-import { QRSchemaElement, rootEMVSchema } from './element-scheme.ts';
+import { QRElementSchema, rootEMVSchema } from './element-schema.ts';
 
 export interface EMVMerchantQRParams {
   encoding?: 'utf8'|'base64';
@@ -184,7 +184,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
   }
 
   dumpCode() {
-    function dumpNode( node: QRCodeNode, schema: QRSchemaElement, indent: string ): string {
+    function dumpNode( node: QRCodeNode, schema: QRElementSchema, indent: string ): string {
       let result = "";
 
       if ( node.isType( 'data' ) ) {
@@ -199,7 +199,7 @@ export class EMVMerchantQRCode extends QRCodeNode {
         }
 
         node.elements.forEach( (element: QRCodeNode ) => {
-          let nodeSchema: QRSchemaElement = schema?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
+          let nodeSchema = schema?.elementMap?.[ element.tag! ] ?? { name: 'unknown', elementMap: {} };
 
           result += dumpNode( element, nodeSchema, indent );
         })

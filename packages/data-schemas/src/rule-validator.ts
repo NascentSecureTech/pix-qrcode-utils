@@ -96,7 +96,7 @@ export class RuleValidator<CTX> {
       try {
         let res = this.ruleInfo.rule( context, this );
 
-        if ( res != undefined ) {
+        if ( res ) {
           result = ( res instanceof Promise ) ? await Promise.resolve<ValidationResult>( res ) : res;
         }
       }

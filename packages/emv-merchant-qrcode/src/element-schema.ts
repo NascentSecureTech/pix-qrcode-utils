@@ -1,8 +1,8 @@
-import { DataSchemaElement } from './deps.ts';
+import { ElementSchema } from './deps.ts';
 import { EMVQR } from './emv-qrcode-tags.ts';
 import { QRCodeNode } from './qrcode-node.ts';
 
-export interface QRSchemaElement extends DataSchemaElement {
+export interface QRElementSchema extends ElementSchema {
   lastTag?: number;
 
   elementMap?: QRElementSchemaMap;
@@ -10,7 +10,7 @@ export interface QRSchemaElement extends DataSchemaElement {
   identifiedElementMap?: Record<string, QRElementSchemaMap>;
 }
 
-export type QRElementSchemaMap = Record<number, QRSchemaElement>;
+export type QRElementSchemaMap = Record<number, QRElementSchema>;
 
 const paymentSystemSpecificTemplateMap = {
   0: {
@@ -174,6 +174,7 @@ const rootSchemaMap: QRElementSchemaMap = {
   },
   60: {
     name: 'Merchant City',
+    length: { max: 15 }
   },
   61: {
     name: 'Postal Code',
@@ -186,6 +187,7 @@ const rootSchemaMap: QRElementSchemaMap = {
   },
   63: {
     name: 'CRC',
+    length: 4,
     pattern: /^[A-Fa-f\d]*$/
   },
   64: {
@@ -211,7 +213,7 @@ export const rootEMVSchema = {
   elementMap: rootSchemaMap
 }
 
-export function lookupNodeSchema( schema: QRSchemaElement, node: QRCodeNode, tag: number ) {
+export function lookupNodeSchema( schema: QRElementSchema, node: QRCodeNode, tag: number ) {
   let elementMap = schema?.elementMap;
 
   if ( schema?.identifiedElementMap ) {
@@ -229,7 +231,7 @@ export function lookupNodeSchema( schema: QRSchemaElement, node: QRCodeNode, tag
     }
   }
 
-  let nodeSchema: QRSchemaElement = { name: 'Unknown', elementMap: {} };
+  let nodeSchema: QRElementSchema = { name: 'Unknown', elementMap: {} };
 
   if ( elementMap?.[ tag ] ) {
     nodeSchema = elementMap[ tag ];

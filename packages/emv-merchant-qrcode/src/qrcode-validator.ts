@@ -1,6 +1,6 @@
 import { RuleValidator, ValidationError } from './deps.ts';
 import { EMVQR } from './emv-qrcode-tags.ts';
-import { QRSchemaElement, rootEMVSchema, lookupNodeSchema } from './element-scheme.ts';
+import { QRElementSchema, rootEMVSchema, lookupNodeSchema } from './element-schema.ts';
 import { QRCodeNode } from './qrcode-node.ts';
 import { computeCRC } from './crc.ts';
 
@@ -30,7 +30,7 @@ const mandatoryElements: number[] = [
   EMVQR.TAG_CRC    // CRC
 ];
 
-function validateElement( val: string|undefined, schema: QRSchemaElement, path: string ) {
+function validateElement( val: string|undefined, schema: QRElementSchema, path: string ) {
   //console.log( "Validating: " + path + `[${val}]` )
 
   // optional?
@@ -67,7 +67,7 @@ function validateElement( val: string|undefined, schema: QRSchemaElement, path: 
   }
 }
 
-function validateNode( node: QRCodeNode, schema: QRSchemaElement, path: string = "") {
+function validateNode( node: QRCodeNode, schema: QRElementSchema, path: string = "") {
   //console.log( "Validating: " + path + `=[${node.content}]:${node.type}` )
 
   if ( node.isType( 'data' ) ) {
@@ -75,7 +75,7 @@ function validateNode( node: QRCodeNode, schema: QRSchemaElement, path: string =
   }
   else {
     node.elements.forEach( (element: QRCodeNode ) => {
-      let nodeSchema: QRSchemaElement = lookupNodeSchema( schema, node, element.tag! );
+      let nodeSchema = lookupNodeSchema( schema, node, element.tag! );
 
       let elementPath = path + (path.length ? ":" : "") + ("00"+element.tag!).slice( -2 );
 
@@ -121,7 +121,7 @@ export function getRuleValidator(): RuleValidator<QRCodeNode> {
 
           // 3. CRC Correct
           let calculatedCRC = computeCRC( root.content.slice( 0, -4 ) );
-          if ( calculatedCRC != crcEl.content ) {
+          if ( calculatedCRC != crcEl.content.toUpperCase() ) {
             throw new QRCodeError( QRErrorCode.CRC_MISMATCH, "Invalid CRC" );
           }
         }

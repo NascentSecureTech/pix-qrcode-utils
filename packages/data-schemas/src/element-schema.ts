@@ -1,7 +1,7 @@
-export interface DataSchemaElement {
+export interface ElementSchema {
   name: string;
 
-  type?: 'string'|'integer'|'boolean';
+  type?: 'string'|'integer'|'boolean'|'date';
 
   optional?: boolean;
 

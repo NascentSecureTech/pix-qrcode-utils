@@ -1,0 +1,13 @@
+{
+  "name": "data-schema",
+  "type": "module",
+  "main": "dist/data-schema.bundle.js",
+
+  "scripts": {
+    "bundle": "deno bundle src/mod.ts dist/data-schema.bundle.js"
+  },
+
+  "devDependencies": {
+
+  }
+}

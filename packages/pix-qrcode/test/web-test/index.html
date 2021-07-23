@@ -323,7 +323,7 @@
       //var el = document.getElementById("output").firstElementChild.nextElementSibling;
       let qr = PIXQRCode.parseCode( value );
 
-      function render( $el, qrn, schema ) {
+      function render( $el, qrn, schema, path ) {
         let table = createTable( $el, [ "", "ID", "EMV Name", "Len", "Value" ] );
 
         /*let elementMap = schema?.elementMap;
@@ -346,11 +346,15 @@
         for( let nn of qrn.elements ) {
           const node = nn[1];
           let ch = ( node.isTemplate() ) ? "-" : "";
+          let nodePath = (path ? `${path}:` : "" ) + ("00"+node.tag).slice(-2);
+
           //let nodeSchema = elementMap?.[ node.tag ] ?? { name: 'unknown', elementMap: {} };
 
           let nodeSchema = lookupNodeSchema( schema, qrn, node.tag );
 
           let trow = insertRow( table, [ ch, node.tag, nodeSchema.name, node.content.length, node.content ] );
+
+          trow.setAttribute("id", `qr-node-${nodePath}` );
 
           if ( node.isTemplate() ) {
             trow.firstElementChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
@@ -364,7 +368,7 @@
             cell = trow.insertCell(-1);
             cell.colSpan = 4;
 
-            render( cell, node, nodeSchema );
+            render( cell, node, nodeSchema, nodePath );
           }
         }
       }
