@@ -70,7 +70,15 @@ export function cobRouter(
 
       //console.log( JSON.stringify( pagedListParams ) );
 
-      context.response.body = { cobs, paginacao: pagedList };
+      context.response.body = {
+        parameters: {
+          inicio: rawParams.inicio,
+          fim: rawParams.fim,
+          paginacao: pagedList
+        },
+
+        cobs: cobs
+    };
       //      context.response.body = "Hello world!";
     })
     .get(path + "/" + cobType + "/:txid", async (context) => {
@@ -89,6 +97,14 @@ export function cobRouter(
       } catch (e) {
         context.response.status = 404;
       }
+    })
+    .post(path + "/" + cobType + "/:txid", async (context) => {
+      const body = context.request.body();
+
+      console.log( context.request.headers );
+      console.log( body.type );
+      console.log( await (body.value) );
+      context.response.body = "OK";
     })
     .put(path + "/" + cobType + "/:txid", async (context) => {
       const { txid } = getRouteParams(context);
