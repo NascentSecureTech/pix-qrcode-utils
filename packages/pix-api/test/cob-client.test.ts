@@ -1,12 +1,10 @@
-import { CobClient, W3CFetchClient, ClientTransport, Cobranca, PartialCobranca } from '../src/mod.ts';
+import { CobClient, JSONFetcher, Cobranca, PartialCobranca } from '../src/mod.ts';
 
 const baseUrl = "http://localhost:9666/api/";
 
 function getCobClient( ): CobClient {
-  const fc = new W3CFetchClient(baseUrl);
-  const transport = new ClientTransport( fc );
-
-  const client = new CobClient(transport, "cob");
+  const fc = new JSONFetcher({baseUrl});
+  const client = new CobClient(fc, "cob");
 
   return client;
 }

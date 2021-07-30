@@ -1,8 +1,8 @@
-import { IClientTransport, buildPath } from './client-transport.ts';
+import { IJSONFetcher, FetchQueryParams, buildFetchPath } from './mod.ts';
 import { Cobranca, PartialCobranca, CobType, PagedListCobParams } from '../schemas/mod.ts';
 
 export class CobClient {
-  constructor( private transport: IClientTransport, public readonly cobType: CobType, public additionalQuery?: Record<string,string> ) {
+  constructor( private fetcher: IJSONFetcher, public readonly cobType: CobType, public additionalQuery?: FetchQueryParams ) {
     //
   }
 
@@ -25,33 +25,33 @@ export class CobClient {
     // remove null entries
     let q2 = Object.fromEntries(Object.entries(query).filter(([_, v]) => v != undefined)) as Record<string,string>;
 
-    const path = buildPath( `${this.cobType}`, q2 );
+    const path = buildFetchPath( `${this.cobType}`, q2 );
 
-    const cobs = await this.transport.client.fetchJSON<Cobranca[]>( "GET", path );
+    const cobs = await this.fetcher.fetchJSON<Cobranca[]>( "GET", path );
 
     return cobs;
   }
 
   async getCob( txid: string ): Promise<Cobranca> {
-    const path = buildPath( `${this.cobType}/${txid}`, this.additionalQuery );
+    const path = buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery );
 
-    const cob = await this.transport.client.fetchJSON<Cobranca>( "GET", path );
+    const cob = await this.fetcher.fetchJSON<Cobranca>( "GET", path );
 
     return cob;
   }
 
   async putCob( txid: string = '', cobIn: Cobranca ): Promise<Cobranca> {
-    const path = buildPath( `${this.cobType}/${txid}`, this.additionalQuery );
+    const path = buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery );
 
-    const cobOut = await this.transport.client.fetchJSON<Cobranca,Cobranca>( "PUT", path, cobIn );
+    const cobOut = await this.fetcher.fetchJSON<Cobranca,Cobranca>( "PUT", path, cobIn );
 
     return cobOut;
   }
 
   async patchCob( txid: string, cobIn: PartialCobranca ): Promise<Cobranca> {
-    const path = buildPath( `${this.cobType}/${txid}`, this.additionalQuery);
+    const path = buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery);
 
-    const cobOut = await this.transport.client.fetchJSON<PartialCobranca,Cobranca>( "PATCH", path, cobIn );
+    const cobOut = await this.fetcher.fetchJSON<PartialCobranca,Cobranca>( "PATCH", path, cobIn );
 
     return cobOut;
   }

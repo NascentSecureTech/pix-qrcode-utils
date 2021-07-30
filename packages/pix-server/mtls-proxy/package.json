@@ -1,0 +1,15 @@
+{
+  "name": "mtls-proxy-server",
+  "type": "module",
+  "main": "dist/mtls-proxy-server.js",
+  "scripts": {
+    "bundle": "tsc src/server.ts dist/mtls-proxy-server.js"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "@types/node": "10",
+    "@types/node-fetch": "^2.5.12",
+    "axios": "^0.21.1",
+    "node-fetch": "^2.6.1"
+  }
+}
