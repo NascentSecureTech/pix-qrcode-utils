@@ -12,7 +12,7 @@ function getCobClient( ): CobClient {
 const cobData1: Cobranca = {
   chave: "99999999999",
   calendario: { expiracao: 86400 },
-  valor: { original: 1234.00, modalidadeAlteracao: 1 },
+  valor: { original: "1234.00", modalidadeAlteracao: 1 },
 }
 
 Deno.test( {
@@ -44,7 +44,7 @@ Deno.test( {
       valor: {
         desconto: {
           modalidade: 1,
-          valorPerc: 100.00
+          valorPerc: "100.00"
         }
       }
     };

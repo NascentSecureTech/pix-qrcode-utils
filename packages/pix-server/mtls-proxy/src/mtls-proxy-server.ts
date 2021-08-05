@@ -1,11 +1,12 @@
 //import axios from 'axios';
 import * as http from 'http';
+import * as https from 'https';
+import * as fs from 'fs';
 import RequestListener = http.RequestListener;
 
 import * as util from 'util';
 import TextDecoder = util.TextDecoder;
 
-//const fs = require('fs');
 import fetch from 'node-fetch';
 import * as nodeFetch from 'node-fetch';
 import Headers = nodeFetch.Headers;
@@ -27,7 +28,7 @@ export interface ProxyResponse {
 }
 
 /*const options = {
-  pathCert: "../data/"
+  pathCert: "./data/gn-311972-api-pix-h.p12"
 }
 
 const certificate = fs.readFileSync(options.pathCert);
@@ -39,11 +40,30 @@ const agent = new https.Agent({
 
 
 async function handleRequest( req: ProxyRequest ): Promise<ProxyResponse> {
+  let agent;
+
+  if ( false && req.url.indexOf("token") != 0 ) {
+    agent = new https.Agent({
+      key: fs.readFileSync('./data/gn-311972-api-pix-h.key.pem'),
+      cert: fs.readFileSync('./data/gn-311972-api-pix-h.crt.pem'),
+  	});
+    console.log( "Cert 1")
+  }
+  else {
+    agent = new https.Agent({
+      key: fs.readFileSync('./data/gn-311972-api-pix2-h.key.pem'),
+      cert: fs.readFileSync('./data/gn-311972-api-pix2-h.crt.pem'),
+  	});
+    console.log( "Cert 2")
+  }
+
+  try {
 
   return fetch( req.url, {
     method: req.method,
     headers: new Headers( JSON.parse( req.headers ) ),
-    body: req.body
+    body: req.body,
+    agent: agent
     } )
     .then( async (resp) => {
 //      console.log( resp.status );
@@ -51,17 +71,19 @@ async function handleRequest( req: ProxyRequest ): Promise<ProxyResponse> {
 //      console.log( JSON.stringify( resp.headers.keys() ) ) //get('content-type')
 
       return resp.text().then( (t) => {
-//        console.log(t )
-
         const proxyResp: ProxyResponse = {
           status: resp.status,
-          headers: JSON.stringify(resp.headers),
+          headers: JSON.stringify(new Object( resp.headers.raw() )),
           body: t
         }
 
         return proxyResp;
       })
     });
+  }
+  catch( e ) {
+    console.log( e );
+  }
 
 }
 
@@ -77,12 +99,14 @@ const requestListener: RequestListener = function (req, res) {
     } else {
       const proxyReq: ProxyRequest = JSON.parse( new TextDecoder().decode( Buffer.concat(chunks) ) );
 
-      console.log( "PROXY", proxyReq )
+      console.log( "REQUEST" ); console.log( proxyReq )
 
-      handleRequest( proxyReq ).then( (pr) => {
+      handleRequest( proxyReq ).then( (proxyResp) => {
+        console.log( "RESPONSE" ); console.log( proxyResp )
+
         res.setHeader("content-type","application/json");
         res.writeHead(200);
-        res.end(JSON.stringify(pr));
+        res.end(JSON.stringify(proxyResp));
       })
     }
   })

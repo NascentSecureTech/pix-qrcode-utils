@@ -2,7 +2,7 @@ import { IJSONFetcher, JSONFetcher } from "./mod.ts";
 import { base64 } from "../deps.ts";
 
 //
-interface OAuth2ClientConfig {
+export interface OAuth2ClientConfig {
   //
   clientId: string;
 
@@ -20,7 +20,7 @@ interface OAuth2ClientConfig {
 }
 
 //
-interface OAuth2Token {
+export interface OAuth2Token {
   //
   accessToken: string;
 
@@ -60,15 +60,13 @@ export class ClientCredentialsFlowClient {
   }
 
   //
-  async getAccessToken(): Promise<OAuth2Token> {
+  async getAccessToken( scopes: string = "" ): Promise<OAuth2Token> {
     if (this.token && this.tokenCreated) {
       //const now = new Date();
 
       //if ( this.tokenCreated.valueOf() + ( this.token.expiresIn ?? 0 ) < now.valueOf() )
       return this.token;
     }
-
-    const scopes = "cob.read cob.write pix.read pix.write";
 
     const postBody = new URLSearchParams({
       grant_type: "client_credentials",
@@ -88,7 +86,7 @@ export class ClientCredentialsFlowClient {
       accessToken: json.access_token,
       tokenType: json.token_type,
       expiresIn: json.expires_in,
-      scopes: scopes.split(" "),
+      scopes: json.scope.split(" "),
     };
     this.tokenCreated = new Date();
 
