@@ -1,6 +1,4 @@
-import { Cobranca, CobType } from '../schemas/mod.ts';
-import { ListCobParams } from '../schemas/mod.ts';
-import { Paginacao, Paginado } from '../schemas/mod.ts';
+import { Cobranca, CobType, ListCobParams, Paginacao, Paginado } from '../deps.ts';
 
 import { DBContext } from './db.ts';
 import { APIClientID } from './api-client-id.ts';

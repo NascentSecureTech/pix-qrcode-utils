@@ -1,6 +1,6 @@
-import { Cobranca } from '../../../pix-api/src/mod.ts';
-import { DBContext, ICobDataStore, CobListIdentifier, CobIdentifier } from '../../../pix-api/src/mod.ts';
-import { ListCobParams, Paginacao, Paginado } from '../../../pix-api/src/mod.ts';
+import { Cobranca } from '../../../pix-data-schemas/src/mod.ts';
+import { ListCobParams, Paginacao, Paginado } from '../../../pix-data-schemas/src/mod.ts';
+import { DBContext, ICobDataStore, CobListIdentifier, CobIdentifier } from '../../../api-pix/src/mod.ts';
 
 export class MemoryCobStore implements ICobDataStore {
   #cobStore = new Map<string, Cobranca>() ;

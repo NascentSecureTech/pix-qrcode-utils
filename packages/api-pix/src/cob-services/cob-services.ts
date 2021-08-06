@@ -1,9 +1,7 @@
 import {
-  Cobranca,PartialCobranca,
-  PagedListCobParams,
-  /*Status, */Paginacao, Paginado,
-} from "../schemas/mod.ts";
-import { CobType } from "../schemas/mod.ts";
+  Cobranca, CobType, PartialCobranca,
+  PagedListCobParams, Paginado,
+} from "../deps.ts";
 import { ICobDataStore, ILocDataStore, CobListIdentifier, CobIdentifier, DBContext } from "../data-store/mod.ts";
 
 export class PixApiCobService {

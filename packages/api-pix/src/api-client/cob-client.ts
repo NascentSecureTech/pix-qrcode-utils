@@ -1,5 +1,5 @@
 import { IJSONFetcher, FetchQueryParams, buildFetchPath } from './mod.ts';
-import { Cobranca, PartialCobranca, CobType, PagedListCobParams } from '../schemas/mod.ts';
+import { Cobranca, PartialCobranca, CobType, PagedListCobParams } from '../deps.ts';
 
 export class CobClient {
   constructor( private fetcher: IJSONFetcher, public readonly cobType: CobType, public additionalQuery?: FetchQueryParams ) {

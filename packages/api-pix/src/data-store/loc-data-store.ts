@@ -1,4 +1,4 @@
-import { Location, CobType } from '../schemas/mod.ts';
+import { Location, CobType } from '../deps.ts';
 
 import { DBContext } from './db.ts';
 import { APIClientID } from './api-client-id.ts';

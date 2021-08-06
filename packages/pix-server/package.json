@@ -1,0 +1,13 @@
+{
+  "name": "pix-server",
+  "type": "module",
+  "main": "dist/pix-server.bundle.js",
+
+  "scripts": {
+    "bundle": "deno bundle server/server.ts dist/pix-server.bundle.js"
+  },
+
+  "devDependencies": {
+    "typescript-deno-plugin": "^1.31.0"
+  }
+}

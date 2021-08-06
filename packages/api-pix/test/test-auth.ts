@@ -1,5 +1,5 @@
 import { ClientCredentialsFlowClient, JSONFetcher, ProxyFetcher, OAuth2ClientConfig, OAuth2Token } from '../src/mod.ts';
-import * as CREDS from './test-credentials.ts';
+//import * as CREDS from './test-credentials.ts';
 
 //const proxy = new ProxyFetcher( "http://localhost:8080", { debug: true } );
 async function authenticate( config: OAuth2ClientConfig ) {
@@ -23,8 +23,8 @@ function getFetcher( token: OAuth2Token, config: any ) {
     debug: true
   }
 
-  if ( config.proxyUrl ) {
-    return new ProxyFetcher( "http://localhost:8080", fetchOptions );
+  if ( config.mtlsProxyUrl ) {
+    return new ProxyFetcher( config.mtlsProxyUrl, fetchOptions );
   }
   else {
     return new JSONFetcher( fetchOptions );
@@ -42,10 +42,11 @@ Deno.test( {
       clientSecret: "CLIENT_SECRET",
       tokenUri: "TOKEN_URI",
       baseUrl: "BASE_URL",
+      mtlsProxyHost: "PROXY_URL", // se for rotear pelo mtlsProxy do pix-server
       */
 
       // these are mine ..
-      ...CREDS.banrisulDev,
+      ...(await import('./test-credentials.ts')).banrisulDev,
 
       debug: true
     }

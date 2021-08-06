@@ -1,0 +1,9 @@
+{
+  "name": "pix-schemas",
+  "type": "module",
+  "scripts": {
+  },
+  "devDependencies": {
+    "typescript-deno-plugin": "^1.31.0"
+  }
+}

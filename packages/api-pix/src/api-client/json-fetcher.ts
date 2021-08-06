@@ -104,7 +104,7 @@ export class JSONFetcher implements IJSONFetcher {
         console.log("Headers: ", Object.fromEntries(headers.entries()));
         if (body) {
           console.log( "Body:", (body instanceof URLSearchParams)
-              ? Object.fromEntries(body.entries())
+              ? body.toString() // Object.fromEntries(body.entries())
               : body
           );
         }

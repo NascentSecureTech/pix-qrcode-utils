@@ -1,10 +1,9 @@
 import { Router } from "https://deno.land/x/oak/mod.ts";
-import {
-  Cobranca, CobType, Status,
-  CobIdentifier, CobListIdentifier,
-  PixApiCobService,
-  PagedListCobParams, Paginacao,
-} from "../../../pix-api/src/mod.ts";
+import { Cobranca, CobType, Status, PagedListCobParams, Paginacao } from "../../../pix-data-schemas/src/mod.ts";
+import { CobIdentifier, CobListIdentifier, PixApiCobService } from "../../../api-pix/src/mod.ts";
+
+
+
 import { MemoryCobStore } from "./memory-cob-data-store.ts";
 import { MemoryLocStore } from "./memory-loc-data-store.ts";
 

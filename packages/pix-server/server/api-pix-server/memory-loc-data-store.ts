@@ -1,10 +1,11 @@
-import { Location, CobType } from "../../../pix-api/src/mod.ts";
+import { Location, CobType } from "../../../pix-data-schemas/src/mod.ts";
+
 import {
   DBContext,
   APIClientID,
   ILocDataStore,
   LocIdentifier,
-} from "../../../pix-api/src/mod.ts";
+} from "../../../api-pix/src/mod.ts";
 
 export class MemoryLocStore implements ILocDataStore {
   #lastID = 0;
