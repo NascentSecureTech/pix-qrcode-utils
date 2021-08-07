@@ -18,6 +18,7 @@ export class ProxyFetcher implements IJSONFetcher {
 
   constructor( public readonly proxyUrl: string, options?: FetchOptions) {
     this.fetcher = new JSONFetcher();
+
     this.options = {
       debug: false,
       ...options,
@@ -39,30 +40,13 @@ export class ProxyFetcher implements IJSONFetcher {
         console.log(method, decodeURIComponent(url.toString()));
       }
 
-      let headers = new Headers(this.options.headers);
-      if (additionalHeaders) {
-        new Headers(additionalHeaders).forEach((value, key) => {
-          headers.append(key, value);
-        });
-      }
-
-      let body: string | undefined;
-
-      if (typeof data === "string") {
-        body = data;
-      } else if (data instanceof URLSearchParams) {
-        body = data.toString();
-        headers.set("content-type", "application/x-www-form-urlencoded")
-      } else if (typeof data === "object") {
-        body = JSON.stringify(data);
-        headers.set('content-type', 'application/json')
-      }
+      let fetchRequest = JSONFetcher.buildFetchRequest( this.options, method, data, additionalHeaders );
 
       const req: ProxyRequest = {
         method,
         url: url.toString(),
-        body,
-        headers: JSON.stringify( Object.fromEntries( headers.entries() ) )
+        body: fetchRequest.body,
+        headers: JSON.stringify( Object.fromEntries( fetchRequest.headers.entries() ) )
       }
 
       const resp = await fetch(this.proxyUrl, {

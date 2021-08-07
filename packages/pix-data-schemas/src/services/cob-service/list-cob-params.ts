@@ -1,5 +1,5 @@
-import { Status } from './cobranca/mod.ts';
-import { Paginacao } from './paginacao.ts';
+import { Status } from '../../cobranca/mod.ts';
+import { Paginacao } from '../paginacao.ts';
 
 export interface ListCobParams {
   //

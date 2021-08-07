@@ -61,12 +61,9 @@ export class ClientCredentialsFlowClient {
 
   //
   async getAccessToken( scopes: string = "" ): Promise<OAuth2Token> {
-    if (this.token && this.tokenCreated) {
-      //const now = new Date();
-
-      //if ( this.tokenCreated.valueOf() + ( this.token.expiresIn ?? 0 ) < now.valueOf() )
-      return this.token;
-    }
+    //if (this.token && this.tokenCreated) {
+    //  return this.token;
+    //}
 
     const postBody = new URLSearchParams({
       grant_type: "client_credentials",
@@ -93,23 +90,3 @@ export class ClientCredentialsFlowClient {
     return this.token;
   }
 }
-
-/*
-const agent = new https.Agent({
-			pfx: this.certificate,
-			passphrase: "",
-		});
-
-		var postParams = {
-			method: 'POST',
-			url: this.baseUrl + this.constants.ENDPOINTS.PIX.authorize.route,
-			headers: {
-				'Authorization': "Basic " + auth,
-				'Content-Type': "application/json",
-				'api-sdk': 'node-' + sdkPackage.version,
-			},
-			httpsAgent: agent,
-			data: {
-				grant_type: 'client_credentials'
-			}
-		};*/

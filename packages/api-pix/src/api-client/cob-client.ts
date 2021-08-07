@@ -43,7 +43,7 @@ export class CobClient {
   async putCob( txid: string = '', cobIn: Cobranca ): Promise<Cobranca> {
     const path = buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery );
 
-    const cobOut = await this.fetcher.fetchJSON<Cobranca,Cobranca>( "PUT", path, cobIn );
+    const cobOut = await this.fetcher.fetchJSON<Cobranca,Cobranca>( "PUT", path, cobIn, undefined, (status) => ( status == 201 ) );
 
     return cobOut;
   }

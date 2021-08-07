@@ -67,6 +67,44 @@ export class JSONFetcher implements IJSONFetcher {
   }
 
   //
+  static buildFetchRequest( options: FetchOptions, method: FetchMethod, data: any, additionalHeaders?: FetchHeaders ) {
+    let headers = new Headers(options.headers);
+
+    if (additionalHeaders) {
+      new Headers(additionalHeaders).forEach((value, key) => {
+        headers.append(key, value);
+      });
+    }
+
+    let body: string | undefined;
+
+    if (typeof data === "string") {
+      body = data;
+    } else if (data instanceof URLSearchParams) {
+      body = data.toString();
+      headers.set("content-type", "application/x-www-form-urlencoded")
+    } else if (typeof data === "object") {
+      body = JSON.stringify(data);
+      headers.append("content-type", "application/json");
+    } else {
+      body = undefined;
+    }
+
+    if (options.debug) {
+      console.log("Headers: ", Object.fromEntries(headers.entries()));
+      if (body) {
+        console.log( "Body:", body );
+      }
+    }
+
+    return {
+      method: method,
+      body,
+      headers,
+    }
+  }
+
+  //
   async fetchJSON<DATA extends Object = Object, RET extends Object = Object>(
     method: FetchMethod,
     path: string,
@@ -81,42 +119,11 @@ export class JSONFetcher implements IJSONFetcher {
         console.log(method, decodeURIComponent(url.toString()));
       }
 
-      let headers = new Headers(this.options.headers);
-      if (additionalHeaders) {
-        new Headers(additionalHeaders).forEach((value, key) => {
-          headers.append(key, value);
-        });
-      }
+      let fetchRequest = JSONFetcher.buildFetchRequest( this.options, method, data, additionalHeaders );
 
-      let body: BodyInit | undefined;
+      const resp = await fetch(url, fetchRequest );
 
-      if (typeof data === "string") {
-        body = data;
-      } else if (data instanceof URLSearchParams) {
-        body = data;
-        headers.delete("content-type");
-      } else if (typeof data === "object") {
-        body = JSON.stringify(data);
-        headers.append("content-type", "application/json");
-      }
-
-      if (this.options.debug) {
-        console.log("Headers: ", Object.fromEntries(headers.entries()));
-        if (body) {
-          console.log( "Body:", (body instanceof URLSearchParams)
-              ? body.toString() // Object.fromEntries(body.entries())
-              : body
-          );
-        }
-      }
-
-      const resp = await fetch(url, {
-        method: method,
-        body,
-        headers,
-      });
-
-      const ok = isOK ? isOK(resp.status) : resp.status == 200;
+      const ok = isOK ? isOK(resp.status) : ( resp.status == 200 );
 
       if (this.options.debug) {
         console.log("\nRESP: ", resp.status);
@@ -135,16 +142,20 @@ export class JSONFetcher implements IJSONFetcher {
 
       let json;
 
-      if (
-        !(resp.headers.get("content-type") ?? "").startsWith("application/json")
-      ) {
-        if (this.options.debug) console.log(await resp.text());
+      if ( !(resp.headers.get("content-type") ?? "").startsWith("application/json") ) {
+        // Did not get JSON .. oops
+        if (this.options.debug) {
+          console.log(await resp.text());
+        }
 
         throw new Error(`Fetch error: Response is not JSON. Content-type = '${resp.headers.get("content-type")}'`);
       } else {
+        // got some JSON .. great!
         json = await resp.json();
 
-        if (this.options.debug) console.log("Body:", json);
+        if (this.options.debug) {
+          console.log("Body:", json);
+        }
       }
 
       return json;
