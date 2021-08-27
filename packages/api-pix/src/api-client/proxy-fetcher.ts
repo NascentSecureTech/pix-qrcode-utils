@@ -40,7 +40,7 @@ export class ProxyFetcher implements IJSONFetcher {
         console.log(method, decodeURIComponent(url.toString()));
       }
 
-      let fetchRequest = JSONFetcher.buildFetchRequest( this.options, method, data, additionalHeaders );
+      let fetchRequest = IJSONFetcher.buildFetchRequest( this.options, method, data, additionalHeaders );
 
       const req: ProxyRequest = {
         method,
