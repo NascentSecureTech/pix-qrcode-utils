@@ -1,6 +1,4 @@
-import { FetchMethod, FetchHeaders, FetchOptions, Fetcher } from './fetcher.ts';
-
-/*//
+//
 export type FetchMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 //
@@ -8,24 +6,8 @@ export type FetchHeaders = Headers | Record<string, string>;
 
 //
 export type FetchQueryParams = Record<string, string>;
-*/
+
 //
-export interface IJSONFetcher {
-  fetchJSON<RET extends Object = Object>(
-    method: FetchMethod,
-    path: string
-  ): Promise<RET>;
-
-  fetchJSON<DATA = object, RET = object>(
-    method: FetchMethod,
-    path: string,
-    data?: DATA,
-    additionalHeaders?: FetchHeaders,
-    isOK?: (status: number) => boolean
-  ): Promise<RET>;
-}
-
-/*
 export interface FetchOptions {
   baseUrl?: string;
 
@@ -36,53 +18,34 @@ export interface FetchOptions {
   privateKey?: any;
 
   clientCert?: any;
-}*/
+}
 
-//
-export class JSONFetcher implements IJSONFetcher {
-  readonly options: FetchOptions;
+export type FetchRequest = ReturnType<typeof Fetcher.buildFetchRequest>;
 
-  constructor(options?: FetchOptions) {
-    this.options = {
-      ...options,
-    };
-
-    //console.log( "JSONFetcher options:", options )
-  }
-
+export namespace Fetcher {
   //
-  async fetchJSON<DATA extends Object = Object, RET extends Object = Object>(
-    method: FetchMethod,
-    path: string,
-    data?: DATA,
-    additionalHeaders?: FetchHeaders,
+  export async function fetchRequest(
+    url: URL | string,
+    fetchRequest: FetchRequest,
+    options?: FetchOptions,
     isOK?: (status: number) => boolean
-  ): Promise<RET> {
-    const url = new URL(path, this.options.baseUrl);
+  ): Promise<Response> {
+    const debug = options?.debug;
 
     try {
-      if (this.options.debug) {
-        console.log(method, decodeURIComponent(url.toString()));
+      if ( debug ) {
+        console.log(fetchRequest?.method, decodeURIComponent(url.toString()));
       }
 
-      let fetchRequest = Fetcher.buildFetchRequest(
-        this.options,
-        method,
-        data,
-        additionalHeaders
-      );
+      const resp = await fetch(url, fetchRequest);
 
-      //const resp = await fetch(url, fetchRequest);
-      const resp = await Fetcher.fetchRequest(url, fetchRequest, this.options, isOK);
+      const ok = isOK ? isOK(resp.status) : resp.status == 200;
 
-
-/*      const ok = isOK ? isOK(resp.status) : resp.status == 200;
-
-      if (fetchRequest.client) {
+      if (fetchRequest?.client) {
         fetchRequest.client.close();
       }
 
-      if (this.options.debug) {
+      if (debug) {
         console.log("\nRESP: ", resp.status);
         console.log("Headers: ", Object.fromEntries(resp.headers.entries()));
       }
@@ -90,50 +53,24 @@ export class JSONFetcher implements IJSONFetcher {
       if (!ok) {
         const text = await resp.text();
 
-        if (this.options.debug) {
+        if (debug) {
           console.log(`Status: ${resp.status}\n${text}`);
         }
 
         throw new Error(`Fetch error: ${resp.status}\n${text}`);
-      }*/
-
-      let json;
-
-      if (
-        !(resp.headers.get("content-type") ?? "").startsWith("application/json")
-      ) {
-        // Did not get JSON .. oops
-        if (this.options.debug) {
-          console.log(await resp.text());
-        }
-
-        throw new Error(
-          `Fetch error: Response is not JSON. Content-type = '${resp.headers.get(
-            "content-type"
-          )}'`
-        );
-      } else {
-        // got some JSON .. great!
-        json = await resp.json();
-
-        if (this.options.debug) {
-          console.log("Body:", json);
-        }
       }
 
-      return json;
+      return resp;
     } catch (e) {
       throw e;
     }
   }
-}
 
-/*export namespace IJSONFetcher {
   //
   export function buildFetchRequest(
     options: FetchOptions,
     method: FetchMethod,
-    data: any,
+    data?: any,
     additionalHeaders?: FetchHeaders
   ) {
     let headers = new Headers(options.headers);
@@ -210,4 +147,4 @@ export class JSONFetcher implements IJSONFetcher {
 
     return path;
   }
-}*/
+}

@@ -1,11 +1,9 @@
-import { ClientCredentialsFlowClient, JSONFetcher, FetchOptions, OAuth2ClientConfig, OAuth2Token } from '../src/mod.ts';
+import { ClientCredentialsFlowClient, Fetcher, JSONFetcher, FetchOptions, OAuth2ClientConfig, OAuth2Token } from '../src/mod.ts';
 import { Cobranca } from '../../pix-data-schemas/src/mod.ts';
 import { CobClient } from '../src/mod.ts';
-//import * as CREDS from './test-credentials.ts';
+import * as base64 from "https://denopkg.com/chiefbiiko/base64/mod.ts";
 
-
-//const proxy = new ProxyFetcher( "http://localhost:8080", { debug: true } );
-async function authenticate( config: OAuth2ClientConfig & { mtlsProxyUrl?: string }) {
+async function authenticate( config: OAuth2ClientConfig ) {
   let fetcher;
 
   fetcher = getFetcher( config );
@@ -21,8 +19,6 @@ async function authenticate( config: OAuth2ClientConfig & { mtlsProxyUrl?: strin
 function getFetcher( config: any, token?: OAuth2Token ) {
   const hdrs = token && {
     authorization: token.tokenType + " " + token.accessToken,
-    //"X-Developer-Application-Key": "d27bd77900ffab401367e17db0050156b9b1a5ba",
-    clientID: config.clientId
   };
 
   const fetchOptions: FetchOptions = {
@@ -30,16 +26,11 @@ function getFetcher( config: any, token?: OAuth2Token ) {
     headers: hdrs,
     privateKey: config.privateKey,
     clientCert: config.clientCert,
-    debug: true
+    //debug: true
   }
 
   //console.log( fetchOptions )
-/*  if ( config.mtlsProxyUrl ) {
-    return new ProxyFetcher( config.mtlsProxyUrl, fetchOptions );
-  }
-  else*/ {
-    return new JSONFetcher( fetchOptions );
-  }
+  return new JSONFetcher( fetchOptions );
 }
 
 Deno.test( {
@@ -57,7 +48,7 @@ Deno.test( {
       */
 
       // these are mine ..
-      ...(await import('./test-credentials.ts')).banrisulDev, //gerenciaNet, //banrisulDev, //
+      ...(await import('./test-credentials.ts')).banrisulDev,  //siCoob, // bancoDoBrasil, //gerenciaNet, //banrisulDev, //
 
       debug: true
     }
@@ -66,18 +57,29 @@ Deno.test( {
     const fetcher = getFetcher( config, token );
 
     console.log( "\n" );
-/*    await fetcher.fetchJSON( "GET", "PP4yNbdYwXuIZJalg9fG7OQLVHk").then( (v) => {
-      console.log( "COB:", v );
-    })*/
 
-    let client = new CobClient( fetcher, "cobv" ); //, { "gw-dev-app-key": "d27bd77900ffab401367e17db0050156b9b1a5ba"} );
+    // BB requires a non-standard query-param
+    let gwAppKey = (config as any)["gw-dev-app-key"];
+
+    let client = new CobClient( fetcher, "cobv", gwAppKey ? { "gw-dev-app-key": gwAppKey} : undefined );
 
     for( let i = 0; i < 1; ++i ) {
       let txid: string = crypto.randomUUID();
       txid = txid.replaceAll("-","");
-      console.log( txid );
+      //console.log( txid );
 
-      let cobIn = await client.putCob( txid, testCobVIn );
+      let cobIn = await client.putCob( txid, testCobVIn )//minCob );
+
+      let qreq = Fetcher.buildFetchRequest( {}, "GET" );
+      let qr = await Fetcher.fetchRequest( "https://" + cobIn.location, qreq );
+
+      let jws = await qr.text();
+      let pl = jws.split('.')[1];
+      //console.log(pl);
+
+      const pls = new TextDecoder().decode(base64.toUint8Array(pl));
+      console.log( "PAYLOAD: " + "https://" + cobIn.location);
+      console.log( JSON.parse( pls ) );
 
       let cobOut = await client.getCob( txid );
 

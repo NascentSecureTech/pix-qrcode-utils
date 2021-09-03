@@ -83,7 +83,7 @@ export class ClientCredentialsFlowClient {
       accessToken: json.access_token,
       tokenType: json.token_type,
       expiresIn: json.expires_in,
-      scopes: json.scope.split(" "),
+      scopes: (json.scope ?? scopes).split(" "),
     };
     this.tokenCreated = new Date();
 

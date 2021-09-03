@@ -1,4 +1,4 @@
-import { IJSONFetcher, FetchQueryParams } from './mod.ts';
+import { Fetcher, IJSONFetcher, FetchQueryParams } from './mod.ts';
 import { Cobranca, PartialCobranca, CobType, PagedListCobParams } from '../deps.ts';
 
 export class CobClient {
@@ -25,7 +25,7 @@ export class CobClient {
     // remove null entries
     let q2 = Object.fromEntries(Object.entries(query).filter(([_, v]) => v != undefined)) as Record<string,string>;
 
-    const path = IJSONFetcher.buildFetchPath( `${this.cobType}`, q2 );
+    const path = Fetcher.buildFetchPath( `${this.cobType}`, q2 );
 
     const cobs = await this.fetcher.fetchJSON<Cobranca[]>( "GET", path );
 
@@ -33,7 +33,7 @@ export class CobClient {
   }
 
   async getCob( txid: string ): Promise<Cobranca> {
-    const path = IJSONFetcher.buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery );
+    const path = Fetcher.buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery );
 
     const cob = await this.fetcher.fetchJSON<Cobranca>( "GET", path );
 
@@ -41,15 +41,15 @@ export class CobClient {
   }
 
   async putCob( txid: string = '', cobIn: Cobranca ): Promise<Cobranca> {
-    const path = IJSONFetcher.buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery );
+    const path = Fetcher.buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery );
 
-    const cobOut = await this.fetcher.fetchJSON<Cobranca,Cobranca>( "PUT", path, cobIn, undefined, (status) => ( status == 201 ) );
+    const cobOut = await this.fetcher.fetchJSON<Cobranca,Cobranca>( "PUT", path, cobIn, undefined, (status) => ( status == 201 || status == 200 ) );
 
     return cobOut;
   }
 
   async patchCob( txid: string, cobIn: PartialCobranca ): Promise<Cobranca> {
-    const path = IJSONFetcher.buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery);
+    const path = Fetcher.buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery );
 
     const cobOut = await this.fetcher.fetchJSON<PartialCobranca,Cobranca>( "PATCH", path, cobIn );
 
