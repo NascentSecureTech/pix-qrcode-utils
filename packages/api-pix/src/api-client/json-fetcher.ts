@@ -66,36 +66,14 @@ export class JSONFetcher implements IJSONFetcher {
       }
 
       let fetchRequest = Fetcher.buildFetchRequest(
-        this.options,
         method,
+        this.options,
         data,
         additionalHeaders
       );
 
       //const resp = await fetch(url, fetchRequest);
       const resp = await Fetcher.fetchRequest(url, fetchRequest, this.options, isOK);
-
-
-/*      const ok = isOK ? isOK(resp.status) : resp.status == 200;
-
-      if (fetchRequest.client) {
-        fetchRequest.client.close();
-      }
-
-      if (this.options.debug) {
-        console.log("\nRESP: ", resp.status);
-        console.log("Headers: ", Object.fromEntries(resp.headers.entries()));
-      }
-
-      if (!ok) {
-        const text = await resp.text();
-
-        if (this.options.debug) {
-          console.log(`Status: ${resp.status}\n${text}`);
-        }
-
-        throw new Error(`Fetch error: ${resp.status}\n${text}`);
-      }*/
 
       let json;
 
@@ -127,87 +105,3 @@ export class JSONFetcher implements IJSONFetcher {
     }
   }
 }
-
-/*export namespace IJSONFetcher {
-  //
-  export function buildFetchRequest(
-    options: FetchOptions,
-    method: FetchMethod,
-    data: any,
-    additionalHeaders?: FetchHeaders
-  ) {
-    let headers = new Headers(options.headers);
-
-    if (additionalHeaders) {
-      new Headers(additionalHeaders).forEach((value, key) => {
-        headers.append(key, value);
-      });
-    }
-
-    let body: string | undefined;
-
-    if (typeof data === "string") {
-      body = data;
-    } else if (data instanceof URLSearchParams) {
-      body = data.toString();
-      headers.set("content-type", "application/x-www-form-urlencoded");
-    } else if (typeof data === "object") {
-      body = JSON.stringify(data);
-      headers.append("content-type", "application/json");
-    } else {
-      body = undefined;
-    }
-
-    if (options.debug) {
-      console.log("Headers: ", Object.fromEntries(headers.entries()));
-      if (body) {
-        console.log("Body:", body);
-      }
-    }
-
-    const client =
-      options.privateKey && options.clientCert &&
-         (Deno as any).createHttpClient({
-            certChain: new TextDecoder().decode(options.clientCert),
-            privateKey: new TextDecoder().decode(options.privateKey),
-          })
-        //: undefined;
-
-    let request = {
-      method: method,
-      body,
-      headers,
-      client,
-    }; // as RequestInit;
-
-    return request;
-  }
-
-  export function buildFetchPath(
-    path: string,
-    query?: FetchQueryParams,
-    additionalQuery?: FetchQueryParams
-  ): string {
-    if (query || additionalQuery) {
-      let queryParams = new URLSearchParams(query);
-
-      if (additionalQuery) {
-        let additionalParams = new URLSearchParams(additionalQuery);
-
-        additionalParams.forEach((value, key) => {
-          queryParams.append(key, value);
-        });
-      }
-
-      let queryString = queryParams.toString();
-
-      if (queryString.length > 0) {
-        path += "?" + queryString;
-      }
-
-      //console.log( "?", queryString )
-    }
-
-    return path;
-  }
-}*/

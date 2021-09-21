@@ -22,6 +22,18 @@ export interface FetchOptions {
 
 export type FetchRequest = ReturnType<typeof Fetcher.buildFetchRequest>;
 
+export class FetchError extends Error {
+  json: any;
+
+  constructor( public status: number, error: string | object ) {
+    super( (typeof error == "string") ? error : `HTTP status ${status}` );
+
+    if ( typeof error !== "string") {
+      this.json = error;
+    }
+  }
+}
+
 export namespace Fetcher {
   //
   export async function fetchRequest(
@@ -51,13 +63,17 @@ export namespace Fetcher {
       }
 
       if (!ok) {
+        if ((resp.headers.get("content-type") ?? "").startsWith("application/json")) {
+          throw new FetchError(resp.status, await resp.json() );
+        }
+
         const text = await resp.text();
 
         if (debug) {
           console.log(`Status: ${resp.status}\n${text}`);
         }
 
-        throw new Error(`Fetch error: ${resp.status}\n${text}`);
+        throw new FetchError(resp.status, `Fetch error: ${resp.status}\n${text}`);
       }
 
       return resp;
@@ -68,8 +84,8 @@ export namespace Fetcher {
 
   //
   export function buildFetchRequest(
-    options: FetchOptions,
     method: FetchMethod,
+    options: FetchOptions,
     data?: any,
     additionalHeaders?: FetchHeaders
   ) {
