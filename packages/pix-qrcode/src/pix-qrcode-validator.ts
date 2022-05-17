@@ -48,7 +48,7 @@ function addDynamicRules( v: RuleValidator<PIXQRCode> ) {
 
 }
 
-export function getRuleValidator( ): RuleValidator<PIXQRCode> {
+export function getPIXRuleValidator( ): RuleValidator<PIXQRCode> {
   let v = RuleValidator.get<PIXQRCode>( { id: "PIXQR" } )
     .addRule( {
       id: "pix-mai",

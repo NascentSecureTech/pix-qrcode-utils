@@ -63,14 +63,14 @@ export namespace Fetcher {
       }
 
       if (!ok) {
-        if ((resp.headers.get("content-type") ?? "").startsWith("application/json")) {
-          throw new FetchError(resp.status, await resp.json() );
-        }
-
         const text = await resp.text();
 
         if (debug) {
           console.log(`Status: ${resp.status}\n${text}`);
+        }
+
+        if ((resp.headers.get("content-type") ?? "").startsWith("application/json")) {
+          throw new FetchError(resp.status, text );
         }
 
         throw new FetchError(resp.status, `Fetch error: ${resp.status}\n${text}`);

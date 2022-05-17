@@ -11,6 +11,8 @@ export type FetchQueryParams = Record<string, string>;
 */
 //
 export interface IJSONFetcher {
+  readonly options: FetchOptions;
+
   fetchJSON<RET extends Object = Object>(
     method: FetchMethod,
     path: string

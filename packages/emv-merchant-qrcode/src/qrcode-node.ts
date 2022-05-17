@@ -1,5 +1,5 @@
 import { valueIn } from './deps.ts';
-import { EMVQR } from './emv-qrcode-tags.ts';
+import * as EMVQR from './emv-qrcode-tags.ts';
 import { QRCodeError, QRErrorCode } from './qrcode-validator.ts';
 
 type QRElementMap = Map<number, QRCodeNode>;

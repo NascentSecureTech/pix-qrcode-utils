@@ -2,7 +2,7 @@ import { Fetcher, IJSONFetcher, FetchQueryParams } from './mod.ts';
 import { Cobranca, PartialCobranca, CobType, PagedListCobParams } from '../deps.ts';
 
 export class CobClient {
-  constructor( private fetcher: IJSONFetcher, public readonly cobType: CobType, public additionalQuery?: FetchQueryParams ) {
+  constructor( public readonly fetcher: IJSONFetcher, public readonly cobType: CobType, public additionalQuery?: FetchQueryParams ) {
     //
   }
 
@@ -51,7 +51,7 @@ export class CobClient {
   async patchCob( txid: string, cobIn: PartialCobranca ): Promise<Cobranca> {
     const path = Fetcher.buildFetchPath( `${this.cobType}/${txid}`, this.additionalQuery );
 
-    const cobOut = await this.fetcher.fetchJSON<PartialCobranca,Cobranca>( "PATCH", path, cobIn );
+    const cobOut = await this.fetcher.fetchJSON<PartialCobranca,Cobranca>( "PATCH", path, cobIn, undefined, (status) => ( status == 201 || status == 200 ) );
 
     return cobOut;
   }

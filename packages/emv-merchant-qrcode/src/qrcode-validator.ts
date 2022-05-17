@@ -1,5 +1,5 @@
 import { RuleValidator, ValidationError } from './deps.ts';
-import { EMVQR } from './emv-qrcode-tags.ts';
+import * as EMVQR from './emv-qrcode-tags.ts';
 import { QRElementSchema, rootEMVSchema, lookupNodeSchema } from './element-schema.ts';
 import { QRCodeNode } from './qrcode-node.ts';
 import { computeCRC } from './crc.ts';

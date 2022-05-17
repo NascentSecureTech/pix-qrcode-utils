@@ -71,5 +71,8 @@ export interface PartialCobranca  {
   solicitacaoPagador?: string;
 
   //
+  status?: Status;
+
+  //
   valor?: PartialValor;
 }

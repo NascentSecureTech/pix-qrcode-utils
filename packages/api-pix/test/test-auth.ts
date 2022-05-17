@@ -1,6 +1,6 @@
 import { Cobranca } from "../../pix-data-schemas/src/mod.ts";
 import { CobClient, Fetcher, JSONFetcher, PayloadClient } from "../src/mod.ts";
-import { authenticate, getFetcher, generateTXID } from "./api-test-helper.ts";
+import { authenticate, getFetcher, generateTXID, timedExec } from "./api-test-helper.ts";
 import { testCobV_Nascent } from './cobv-test-data.ts';
 
 Deno.test({
@@ -18,12 +18,10 @@ Deno.test({
       // these are mine ..
       ...(await import("./test-credentials.ts")).banrisulHomolNascent, //siCoob, // bancoDoBrasil, //gerenciaNet, //banrisulDev, //
 
-      debug: false,
+      //debug: true,
     };
     const token = await authenticate(config);
-
     const fetcher = getFetcher(config, token);
-    console.log("\n");
 
     // BB requires a non-standard query-param
     let gwAppKey = (config as any)["gw-dev-app-key"];
@@ -34,18 +32,15 @@ Deno.test({
       gwAppKey ? { "gw-dev-app-key": gwAppKey } : undefined
     );
 
-    for (let i = 0; i < 1; ++i) {
-      let txid = generateTXID();
-
-      let cobIn = await client.putCob(txid, testCobV_Nascent ); // testCobVIn )//minCob );
-
-      let payloadClient = new PayloadClient();
-
-      const pl = await payloadClient.fetchPayload("https://" + cobIn.loc!.location);
-
-      console.log( "PAYLOAD:", pl );
-
-      /*let cobOut = *//*await client.getCob(txid);*/
-    }
+    const txid = "992efc8888f14a4983aa674d816d3f97";
+    await timedExec<void>( {
+      init: async () => {
+      },
+      exec: async ( ) => {
+        const cobOut = await client.getCob(txid);
+      },
+      cleanup: async( ) => {
+      },
+      count: 1 } );
   },
 });

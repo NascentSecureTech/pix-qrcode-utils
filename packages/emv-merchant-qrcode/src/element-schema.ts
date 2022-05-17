@@ -1,5 +1,5 @@
 import { ElementSchema } from './deps.ts';
-import { EMVQR } from './emv-qrcode-tags.ts';
+import * as EMVQR from './emv-qrcode-tags.ts';
 import { QRCodeNode } from './qrcode-node.ts';
 
 export interface QRElementSchema extends ElementSchema {

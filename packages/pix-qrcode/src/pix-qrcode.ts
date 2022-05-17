@@ -1,6 +1,6 @@
 import { ValidationObserver } from "./deps.ts";
 import { EMVMerchantQRCode, QRCodeNode, EMVMerchantQRParams, EMVQRCodeBasicElements, EMVQR } from "./deps.ts";
-import { getRuleValidator, PIXQRCodeError, PIXQRErrorCode } from './pix-qrcode-validator.ts';
+import { getPIXRuleValidator, PIXQRCodeError, PIXQRErrorCode } from './pix-qrcode-validator.ts';
 
 export class PIX {
   static GUI = 'br.gov.bcb.pix';
@@ -111,7 +111,7 @@ export class PIXQRCode {
   }
 
   public async validateCode( observer?: ValidationObserver ) {
-    return await getRuleValidator( ).validate( this, observer );
+    return await getPIXRuleValidator( ).validate( this, observer );
   }
 
    isPIX( test: "pix"|"valid"|"static"|"dynamic"): boolean {

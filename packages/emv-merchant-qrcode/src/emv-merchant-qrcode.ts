@@ -1,6 +1,6 @@
 import * as base64 from "https://deno.land/x/base64/mod.ts";
 import { ValidationObserver } from './deps.ts';
-import { EMVQR } from './emv-qrcode-tags.ts';
+import * as EMVQR from './emv-qrcode-tags.ts';
 import { QRCodeNode } from './qrcode-node.ts';
 import { getRuleValidator } from './qrcode-validator.ts';
 import { computeCRC } from './crc.ts';

@@ -22,7 +22,7 @@ Deno.test( {
     const now = new Date();
     const txid = "1234";
 
-    console.log('\n');
+    //console.log('\n');
 
     // List COBS
     console.log(await cobCli.getCobs( {

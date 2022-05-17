@@ -1,4 +1,4 @@
-export * from './emv-qrcode-tags.ts';
+export * as EMVQR from './emv-qrcode-tags.ts';
 export * from './emv-merchant-qrcode.ts';
 export * from './qrcode-node.ts';
 export * from './element-schema.ts';
