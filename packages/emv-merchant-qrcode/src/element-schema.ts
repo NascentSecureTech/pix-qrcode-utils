@@ -218,9 +218,9 @@ export function lookupNodeSchema( schema: QRElementSchema, node: QRCodeNode, tag
 
   if ( schema?.identifiedElementMap ) {
     if ( node.hasElement( EMVQR.TAG_TEMPLATE_GUI ) ) {
-      let gui = node.getElement( EMVQR.TAG_TEMPLATE_GUI ).content.toUpperCase();
+      const gui = node.getElement( EMVQR.TAG_TEMPLATE_GUI ).content.toUpperCase();
 
-      for( let xx in schema.identifiedElementMap ) {
+      for( const xx in schema.identifiedElementMap ) {
         if ( xx.toUpperCase() == gui ) {
           elementMap = {
             ...elementMap,
@@ -238,9 +238,9 @@ export function lookupNodeSchema( schema: QRElementSchema, node: QRCodeNode, tag
   }
   else {
   // Not found ..
-    for( let xx in elementMap ) {
-      let elTag = parseInt( xx );
-      let el = elementMap[ elTag ];
+    for( const xx in elementMap ) {
+      const elTag = parseInt( xx );
+      const el = elementMap[ elTag ];
 
       if ( ( tag >= elTag ) && el.lastTag && ( tag <= el.lastTag ) ) {
         nodeSchema = el;

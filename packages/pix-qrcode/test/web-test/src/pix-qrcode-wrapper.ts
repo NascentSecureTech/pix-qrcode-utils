@@ -2,7 +2,7 @@ import { PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, PIXQRCo
 
 export { PIX, EMVQR, PIXQRCode, PIXQRErrorCode, PIXQRCodeError, PIXPayloadRetriever, rootEMVSchema, lookupNodeSchema };
 
-var document = (window as any).document, QRious = (window as any).QRious; // , prompt = (window as any).prompt;
+const document = (window as any).document, QRious = (window as any).QRious; // , prompt = (window as any).prompt;
 
 function handleQRError( E: Error ) {
   let result = "ERROR";
@@ -18,9 +18,9 @@ function handleQRError( E: Error ) {
 }
 
 function showResult( success?: string | null, error?: string ) {
-  let elOutput = document.getElementById('decoded');
-  let elDecoded = document.getElementById('decoded');
-  let elStatus = document.getElementById('qr-status');
+  const elOutput = document.getElementById('decoded');
+  const elDecoded = document.getElementById('decoded');
+  const elStatus = document.getElementById('qr-status');
 
   elStatus.classList.remove("has-background-danger");
   elStatus.classList.remove('has-text-secondary');
@@ -44,10 +44,10 @@ function showResult( success?: string | null, error?: string ) {
 }
 
 export function fixCRC( value: string ) {
-  let $qr = document.getElementById('qr-string');
+  const $qr = document.getElementById('qr-string');
 
   try {
-    let qr = PIXQRCode.parseCode( value );
+    const qr = PIXQRCode.parseCode( value );
 
     value = qr.emvQRCode.buildQRString();
 
@@ -62,11 +62,11 @@ export function fixCRC( value: string ) {
 
 export function createCode( qrInfo: PIXQRCodeElements ) {
 
-  let qr = PIXQRCode.createCode( qrInfo );
+  const qr = PIXQRCode.createCode( qrInfo );
 
-  let $qr = document.getElementById('qr-string');
+  const $qr = document.getElementById('qr-string');
 
-  let value = qr.emvQRCode.buildQRString();
+  const value = qr.emvQRCode.buildQRString();
 
   $qr.value = value;
 
@@ -89,7 +89,7 @@ export async function decodeCode( value: string ) {
       //showResult( JSON.stringify( qr.toJSON(), null, 2 ) );
       showResult( qr.emvQRCode.dumpCode() );
 
-      let r = await Promise.all( [ qr.emvQRCode.validateCode(), qr.validateCode() ] );
+      const r = await Promise.all( [ qr.emvQRCode.validateCode(), qr.validateCode() ] );
       for( const res of r ) {
         if ( res.status == 'fail' ) {
           throw res.error;
@@ -98,7 +98,7 @@ export async function decodeCode( value: string ) {
 
       //let emv = qr.emvQRCode;
 
-      let $fetch = document.getElementById('btn-fetch-dynamic');
+      const $fetch = document.getElementById('btn-fetch-dynamic');
 
       $fetch.disabled = !( qr.isPIX('dynamic' ) );
 
@@ -121,7 +121,7 @@ export async function decodeCode( value: string ) {
   }
 }
 
-export async function extractCode( value: string ): Promise<PIXQRCodeElements | null> {
+export function extractCode( value: string ): PIXQRCodeElements | null {
   let qr;
 
   if ( value.length ) {
@@ -149,21 +149,21 @@ export async function extractCode( value: string ): Promise<PIXQRCodeElements | 
 
 export async function fetchDynamic( value: string ) {
   try {
-    let pix = PIXQRCode.parseCode( value );
+    const pix = PIXQRCode.parseCode( value );
 
     console.log( pix );
     await pix.validateCode();
 
-    let tmpl = pix.emvQRCode.findIdentifiedTemplate( PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST )[ 0 ];
+    const tmpl = pix.emvQRCode.findIdentifiedTemplate( PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST )[ 0 ];
 
     let url = tmpl.getElement(PIX.TAG_MAI_URL).content;
     console.log( url );
 
     url = "pix.nascent.com.br/proxy?url=" + encodeURI( "https://" + url );
 
-    let payload = new PIXPayloadRetriever().fetchPayload( url );
+    const payload = new PIXPayloadRetriever().fetchPayload( url );
 
-    let json = await payload.then( results => {
+    const json = await payload.then( results => {
       return {
        "$hdr": results.header,
        ...results.payload
@@ -171,9 +171,11 @@ export async function fetchDynamic( value: string ) {
      } );
 
      showResult( JSON.stringify( json, null, 2 ) );
+     return true;
   }
   catch( e ) {
     showResult( null, e );
     console.log( "Fetch failed: " + e.message );
-  };
+    return false;
+  }
 }

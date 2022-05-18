@@ -7,7 +7,7 @@ export class PIX {
 
   static TAG_MAI_CHAVE = 1;
   static TAG_MAI_INFO_ADD = 2;
-  static TAG_MAI_URL   = 25
+  static TAG_MAI_URL = 25
 }
 
 export interface PIXDynamicElements extends EMVQRCodeBasicElements {
@@ -54,75 +54,74 @@ export class PIXQRCode {
 
   get emvQRCode() { return this._emvQRCode }
 
-  getMAI( ): QRCodeNode {
-    let maiList = this.emvQRCode.findIdentifiedTemplate( PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST );
+  getMAI(): QRCodeNode {
+    const maiList = this.emvQRCode.findIdentifiedTemplate(PIX.GUI, EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST);
 
-    return  maiList[ 0 ];
+    return maiList[0];
   }
 
-  protected constructor( emvQRCode: EMVMerchantQRCode ) {
+  protected constructor(emvQRCode: EMVMerchantQRCode) {
     this._emvQRCode = emvQRCode;
   }
 
-  static createCode( elements: PIXQRCodeElements ): PIXQRCode {
-    const cleanupObject = ( obj: Record<string,any> ) => Object.entries(obj).reduce((a,[k,v]) => (v === undefined ? a : (a[k]=v, a)), {} as any )
+  static createCode(elements: PIXQRCodeElements): PIXQRCode {
+    const cleanupObject = (obj: any) => Object.entries(obj).reduce((a, [k, v]) => (v === undefined ? a : (a[k] = v, a)), {} as any);
 
-    let pixElements: PIXQRCodeElements = {
+    const pixElements: PIXQRCodeElements = {
       ...defaultPIXCodeElements,
-      ...cleanupObject( elements )
+      ...cleanupObject(elements)
     }
-    let pixQRCode = new PIXQRCode( EMVMerchantQRCode.createCode( pixElements ) );
-    let emvQRCode = pixQRCode.emvQRCode;
+    const pixQRCode = new PIXQRCode(EMVMerchantQRCode.createCode(pixElements));
+    const emvQRCode = pixQRCode.emvQRCode;
 
-    let guiNode = new QRCodeNode( 'data', PIX.GUI, EMVQR.TAG_TEMPLATE_GUI );
+    const guiNode = new QRCodeNode('data', PIX.GUI, EMVQR.TAG_TEMPLATE_GUI);
 
-    const maiPIX = emvQRCode.newTemplateElement( EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST, true, [ guiNode ] );
+    const maiPIX = emvQRCode.newTemplateElement(EMVQR.MAI_TEMPLATE_FIRST, EMVQR.MAI_TEMPLATE_LAST, true, [guiNode]);
 
-    if ( pixElements.type == "static" ) {
-      if ( pixElements.chave )
-        maiPIX.newDataElement( PIX.TAG_MAI_CHAVE, pixElements.chave );
+    if (pixElements.type == "static") {
+      if (pixElements.chave)
+        maiPIX.newDataElement(PIX.TAG_MAI_CHAVE, pixElements.chave);
 
-      if ( pixElements.infoAdicional )
-        maiPIX.newDataElement( PIX.TAG_MAI_INFO_ADD, pixElements.infoAdicional );
+      if (pixElements.infoAdicional)
+        maiPIX.newDataElement(PIX.TAG_MAI_INFO_ADD, pixElements.infoAdicional);
 
     } else {
-      if ( pixElements.url )
-        maiPIX.newDataElement( PIX.TAG_MAI_URL, pixElements.url );
-
+      if (pixElements.url)
+        maiPIX.newDataElement(PIX.TAG_MAI_URL, pixElements.url);
     }
 
-    let el62 = emvQRCode.newTemplateElement( EMVQR.TAG_ADDITIONAL_DATA );
-    el62.newDataElement( EMVQR.TAG_AD_REF_LABEL, pixElements.txid ?? "***" );
+    const el62 = emvQRCode.newTemplateElement(EMVQR.TAG_ADDITIONAL_DATA);
+    el62.newDataElement(EMVQR.TAG_AD_REF_LABEL, pixElements.txid ?? "***");
 
     return pixQRCode;
   }
 
-  static parseCode( qrCode: string,
-                    params?: EMVMerchantQRParams ): PIXQRCode {
+  static parseCode(qrCode: string,
+    params?: EMVMerchantQRParams): PIXQRCode {
 
     params = {
       ...defaultParams,
       ...params
     };
 
-    let pixQRCode = new PIXQRCode( EMVMerchantQRCode.parseCode( qrCode, params ) );
+    const pixQRCode = new PIXQRCode(EMVMerchantQRCode.parseCode(qrCode, params));
 
     return pixQRCode;
   }
 
-  public async validateCode( observer?: ValidationObserver ) {
-    return await getPIXRuleValidator( ).validate( this, observer );
+  public async validateCode(observer?: ValidationObserver) {
+    return await getPIXRuleValidator().validate(this, observer);
   }
 
-   isPIX( test: "pix"|"valid"|"static"|"dynamic"): boolean {
-    let pixMAI = this.getMAI();
-    if ( !pixMAI )
+  isPIX(test: "pix" | "valid" | "static" | "dynamic"): boolean {
+    const pixMAI = this.getMAI();
+    if (!pixMAI)
       return false;
 
-    let isStatic = pixMAI.hasElement( PIX.TAG_MAI_CHAVE );
-    let isDynamic = pixMAI.hasElement( PIX.TAG_MAI_URL );
+    const isStatic = pixMAI.hasElement(PIX.TAG_MAI_CHAVE);
+    const isDynamic = pixMAI.hasElement(PIX.TAG_MAI_URL);
 
-    switch( test ) {
+    switch (test) {
       case "pix": return true;
       case "valid": return isStatic || isDynamic;
       case "static": return isStatic;
@@ -131,26 +130,29 @@ export class PIXQRCode {
   }
 
   extractElements(): PIXQRCodeElements {
-    let emvQR = this.emvQRCode
-    let basicElements = emvQR.extractElements();
+    const emvQR = this.emvQRCode;
+    const basicElements = emvQR.extractElements();
+    const pixMAI = this.getMAI();
 
-    if ( this.isPIX( 'static') ) {
+    if (this.isPIX('static')) {
+
       return {
         type: 'static',
         ...basicElements,
-        chave: this.getMAI()?.getElement( PIX.TAG_MAI_CHAVE ).content,
-        infoAdicional: this.getMAI()?.getElement( PIX.TAG_MAI_INFO_ADD ).content,
+        chave: pixMAI?.getElement(PIX.TAG_MAI_CHAVE).content,
+        infoAdicional: pixMAI?.hasElement(PIX.TAG_MAI_INFO_ADD) ? pixMAI?.getElement(PIX.TAG_MAI_INFO_ADD).content : undefined,
+        transactionAmount: emvQR.hasElement(EMVQR.TAG_TRANSACTION_AMOUNT) ? parseFloat(emvQR.getElement(EMVQR.TAG_TRANSACTION_AMOUNT).content) : undefined,
         txid: emvQR.getElement(EMVQR.TAG_ADDITIONAL_DATA)?.getElement(EMVQR.TAG_AD_REF_LABEL)?.content,
       }
     }
-    else if( this.isPIX( 'dynamic') ) {
+    else if (this.isPIX('dynamic')) {
       return {
         type: 'dynamic',
         ...basicElements,
-        url: this.getMAI()?.getElement( PIX.TAG_MAI_URL ).content
+        url: this.getMAI()?.getElement(PIX.TAG_MAI_URL).content
       }
     }
 
-    throw new PIXQRCodeError( PIXQRErrorCode.INVALID_QRCODE, "Unable to extract static/dynamic elements" )
+    throw new PIXQRCodeError(PIXQRErrorCode.INVALID_QRCODE, "Unable to extract static/dynamic elements")
   }
 }

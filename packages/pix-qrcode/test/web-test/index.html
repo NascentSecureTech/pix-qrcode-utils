@@ -1,570 +1,532 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-    <title>PIX QRCode Tool</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css"
-    />
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"
-      integrity="sha512-pUhApVQtLbnpLtJn6DuzDD5o2xtmLJnJ7oBoMsBnzOkVkpqofGLGPaBJ6ayD2zQe3lCgCibhJBi4cj5wAxwVKA=="
-      crossorigin="anonymous"
-    ></script>
-    <script
-      defer
-      src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"
-    ></script>
-    <style>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <title>PIX QRCode Tool</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"
+    integrity="sha512-pUhApVQtLbnpLtJn6DuzDD5o2xtmLJnJ7oBoMsBnzOkVkpqofGLGPaBJ6ayD2zQe3lCgCibhJBi4cj5wAxwVKA=="
+    crossorigin="anonymous"></script>
+  <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+  <style>
     #results {
-      box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12);
+      box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12);
 
     }
 
-      td table {
-        width: 100%;
-      }
-      td.no-padding {
-        padding: 0;
-        margin: 0;
-      }
+    td table {
+      width: 100%;
+    }
 
-      tr.is-collapsed td {
-        display: none;
-      }
-    </style>
-  </head>
-  <body>
-    <section class="section container">
-      <div class="columns" style="border: 1px solid blue;">
-        <div class="column is-9">
-          <label for="qr-string">QRCode</label>
-          <textarea
-            id="qr-string"
-            spellcheck="false"
-            style="
+    td.no-padding {
+      padding: 0;
+      margin: 0;
+    }
+
+    tr.is-collapsed td {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <section class="section container">
+    <div class="columns" style="border: 1px solid blue;">
+      <div class="column is-9">
+        <label for="qr-string">QRCode</label>
+        <textarea id="qr-string" spellcheck="false" style="
               width: 100%;
               height: 126px;
               word-break: break-all;
               font-family: 'Courier New';
               font-size: 16px;
               font-weight: 800;
-            "
-            placeholder="Paste a QR-CODE string here ... "
-            oninput="decodeCode( this.value.trim() );"
-          ></textarea>
-          <textarea
-            id="qr-status"
-            class="column is-9"
-            style="width: 100%; height: 44px; resize: none; font-size: 16px;"
-          ></textarea>
-        </div>
-        <div class="column is-3 has-text-centered">
-          <img
-            id="qr-bitmap"
-            alt="QR-CODE"
-            style="
+            " placeholder="Paste a QR-CODE string here ... " oninput="decodeCode( this.value.trim() );"></textarea>
+        <textarea id="qr-status" class="column is-9"
+          style="width: 100%; height: 44px; resize: none; font-size: 16px;"></textarea>
+      </div>
+      <div class="column is-3 has-text-centered">
+        <img id="qr-bitmap" alt="QR-CODE" style="
               border: 1px solid;
               height: 200px;
               min-height: 200px;
               min-width: 200px;
               margin-left: auto;
               margin-right: auto;
-            "
-          />
-        </div>
+            " />
       </div>
-      <div class="buttons">
-        <button
-          class="button is-primary"
-          onclick="decodeCode( document.getElementById('qr-string').value.trim() );"
-          placeholder="Decode PIX QR-CODE"
-        >
-          Decode QR
-        </button>
-        <button
-          class="button is-secondary"
-          onclick="extractCode( document.getElementById('qr-string').value.trim() ); changeTab(document.getElementById('output').getElementsByTagName('li')[0])"
-          placeholder="Extract"
-        >
-          Extract PIX
-        </button>
-        <button
-          class="button is-secondary"
-          onclick="showPIXDialog( );"
-          placeholder="New Dynamic"
-        >
-          Create PIX
-        </button>
-        <button
-          class="button is-secondary"
-          onclick="fixCRC( document.getElementById('qr-string').value.trim() );"
-          placeholder="Recalculate CRC"
-        >
-          Fix CRC
-        </button>
-        <button
-          id="btn-fetch-dynamic"
-          class="button is-secondary"
-          onclick="fetchDynamic( document.getElementById('qr-string').value.trim() );"
-          disabled
-          placeholder="Fetch and unwrap signed payload"
-        >
-          Fetch URL
-        </button>
-      </div>
-      <div id="output">
-        <div class="tabs is-toggle is-medium is-fullwidth">
-          <ul>
+    </div>
+    <div class="buttons">
+      <button class="button is-primary" onclick="decodeCode( document.getElementById('qr-string').value.trim() );"
+        placeholder="Decode PIX QR-CODE">
+        Decode QR
+      </button>
+      <button class="button is-secondary"
+        onclick="extractCode( document.getElementById('qr-string').value.trim() ); changeTab(document.getElementById('output').getElementsByTagName('li')[0])"
+        placeholder="Extract">
+        Extract PIX
+      </button>
+      <button class="button is-secondary" onclick="showPIXDialog( );" placeholder="New Dynamic">
+        Create PIX
+      </button>
+      <button class="button is-secondary" onclick="fixCRC( document.getElementById('qr-string').value.trim() );"
+        placeholder="Recalculate CRC">
+        Fix CRC
+      </button>
+      <button id="btn-fetch-dynamic" class="button is-secondary"
+        onclick="fetchDynamic( document.getElementById('qr-string').value.trim() );" disabled
+        placeholder="Fetch and unwrap signed payload">
+        Fetch URL
+      </button>
+    </div>
+    <div id="output">
+      <div class="tabs is-toggle is-medium is-fullwidth">
+        <ul>
           <li class="is-active" onclick="changeTab(this)">
             <a>
-              <span class="icon is-small"
-                ><i class="fab fa-js" aria-hidden="true"></i
-              ></span>
+              <span class="icon is-small"><i class="fab fa-js" aria-hidden="true"></i></span>
               <span>JSON</span>
             </a>
           </li>
           <li onclick="changeTab(this)">
             <a>
-              <span class="icon is-small"
-                ><i
-                  class="fas fa-th-list"
-                  aria-hidden="true"
-                ></i
-              ></span>
+              <span class="icon is-small"><i class="fas fa-th-list" aria-hidden="true"></i></span>
               <span>Tree</span>
             </a>
           </li>
         </ul>
-        </div>
-        <div class="container">
-          <div class="content-tab">
-            <label for="decoded">Decoded QR</label>
-            <textarea
-              id="decoded"
-              style="
+      </div>
+      <div class="container">
+        <div class="content-tab">
+          <label for="decoded">Decoded QR</label>
+          <textarea id="decoded" style="
                 width: 100%;
                 height: 500px;
                 font-family: 'Courier New';
                 font-size: 16px;
                 font-weight: 800;
-              "
-            >
+              ">
             </textarea>
-          </div>
-          <div class="content-tab is-hidden">
-            <div id="qr-tree"></div>
-          </div>
         </div>
-      </div>
-
-    </section>
-    <div class="columns container">
-      <div class="column is-one-third">(c) Sean Wykes 2020</div>
-      <div class="column is-one-third">https://nascent.com.br</div>
-      <div class="column is-one-third">
-        https://github.com/NascentSecureTech/pix-qrcode-utils
+        <div class="content-tab is-hidden">
+          <div id="qr-tree"></div>
+        </div>
       </div>
     </div>
 
-    <div id="qr-info-modal" class="modal no-is-active">
-      <div class="modal-background"></div>
-      <div class="modal-card">
-        <header class="modal-card-head">
-          <div class="modal-card-icon">
-            <span class="icon is-medium">
-              <i class="fas fa-2x fa-qrcode" style="color: blue; margin-right: 16px;" aria-hidden="true"></i>
-            </span>
-          </div>
-          <p class="modal-card-title">Create PIX QRCode</p>
-          <button class="delete" aria-label="close" onclick="closePIXDialog( false )"></button>
-        </header>
-        <section class="modal-card-body">
-          <div class="tabs is-toggle is-medium is-fullwidth">
-            <ul>
+  </section>
+  <div class="columns container">
+    <div class="column is-one-third">(c) Sean Wykes 2020</div>
+    <div class="column is-one-third">https://nascent.com.br</div>
+    <div class="column is-one-third">
+      https://github.com/NascentSecureTech/pix-qrcode-utils
+    </div>
+  </div>
+
+  <div id="qr-info-modal" class="modal no-is-active">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <div class="modal-card-icon">
+          <span class="icon is-medium">
+            <i class="fas fa-2x fa-qrcode" style="color: blue; margin-right: 16px;" aria-hidden="true"></i>
+          </span>
+        </div>
+        <p class="modal-card-title">Create PIX QRCode</p>
+        <button class="delete" aria-label="close" onclick="closePIXDialog( false )"></button>
+      </header>
+      <section class="modal-card-body">
+        <div class="tabs is-toggle is-medium is-fullwidth">
+          <ul>
             <li class="is-active" onclick="changeTab(this, 0)">
               <a>
-                <span class="icon is-small"
-                  ><i class="fas fa-money-check-alt" aria-hidden="true"></i
-                ></span>
+                <span class="icon is-small"><i class="fas fa-money-check-alt" aria-hidden="true"></i></span>
                 <span>Static</span>
               </a>
             </li>
             <li onclick="changeTab(this, 1)">
               <a>
-                <span class="icon is-small"
-                  ><i
-                    class="fas fa-file-invoice-dollar"
-                    aria-hidden="true"
-                  ></i
-                ></span>
+                <span class="icon is-small"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
                 <span>Dynamic</span>
               </a>
             </li>
           </ul>
-          </div>
-          <div class="container">
-            <div class="content-tab">
-              <div class="field">
-                <label class="label">Chave</label>
-                <div class="control has-icons-left">
-                  <input id="pix-chave" class="input" type="text" placeholder="Chave no DICT">
-                  <span class="icon is-small is-left">
-                    <i class="fas fa-key"></i>
-                  </span>
-                </div>
-              </div>
-              <div class="field">
-                <label class="label">Amount</label>
-                <div class="control has-icons-left">
-                  <input id="pix-value" class="input" type="text" placeholder="Amount like 1.00">
-                  <span class="icon is-small is-left">
-                    <i class="fas fa-dollar-sign"></i>
-                  </span>
-                </div>
-              </div>
-              <div class="field">
-                <label class="label">Nome</label>
-                <div class="control has-icons-left">
-                  <input id="pix-nome" class="input" type="text" placeholder="Nome">
-                  <span class="icon is-small is-left">
-                    <i class="fas fa-user"></i>
-                  </span>
-                </div>
-              </div>
-              <div class="field">
-                <label class="label">TXID</label>
-                <div class="control has-icons-left">
-                  <input id="pix-txid" class="input" type="text" placeholder="TXID">
-                  <span class="icon is-small is-left">
-                    <i class="fas fa-passport"></i>
-                  </span>
-                </div>
-              </div>
-
-              <div class="field">
-                <label class="label">InfoAdicional</label>
-                <div class="control has-icons-left">
-                  <input id="pix-info-add" class="input" type="text" placeholder="Informações Adicionais">
-                  <span class="icon is-small is-left">
-                    <i class="fas fa-info-circle"></i>
-                  </span>
-                </div>
-              </div>
-
-            </div>
-            <div class="content-tab is-hidden">
-              <div class="field">
-                <label class="label">url</label>
-                <div class="control has-icons-left">
-                  <input id="pix-url" class="input" type="text" placeholder="URL do Payload (sem https://)">
-                  <span class="icon is-small is-left">
-                    <i class="fas fa-link"></i>
-                  </span>
-                </div>
+        </div>
+        <div class="container">
+          <div class="content-tab">
+            <div class="field">
+              <label class="label">Chave</label>
+              <div class="control has-icons-left">
+                <input id="pix-chave" class="input" type="text" placeholder="Chave no DICT">
+                <span class="icon is-small is-left">
+                  <i class="fas fa-key"></i>
+                </span>
               </div>
             </div>
+            <div class="field">
+              <label class="label">Amount</label>
+              <div class="control has-icons-left">
+                <input id="pix-value" class="input" type="text" placeholder="Amount like 1.00">
+                <span class="icon is-small is-left">
+                  <i class="fas fa-dollar-sign"></i>
+                </span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Nome</label>
+              <div class="control has-icons-left">
+                <input id="pix-nome" class="input" type="text" placeholder="Nome">
+                <span class="icon is-small is-left">
+                  <i class="fas fa-user"></i>
+                </span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">TXID</label>
+              <div class="control has-icons-left">
+                <input id="pix-txid" class="input" type="text" placeholder="TXID">
+                <span class="icon is-small is-left">
+                  <i class="fas fa-passport"></i>
+                </span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">InfoAdicional</label>
+              <div class="control has-icons-left">
+                <input id="pix-info-add" class="input" type="text" placeholder="Informações Adicionais">
+                <span class="icon is-small is-left">
+                  <i class="fas fa-info-circle"></i>
+                </span>
+              </div>
+            </div>
+
           </div>
-        </section>
-        <footer class="modal-card-foot">
-          <button class="button is-success" onclick="closePIXDialog(true)">Create QR</button>
-          <button class="button" onclick="closePIXDialog(false)">Cancel</button>
-        </footer>
-      </div>
+          <div class="content-tab is-hidden">
+            <div class="field">
+              <label class="label">url</label>
+              <div class="control has-icons-left">
+                <input id="pix-url" class="input" type="text" placeholder="URL do Payload (sem https://)">
+                <span class="icon is-small is-left">
+                  <i class="fas fa-link"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <footer class="modal-card-foot">
+        <button class="button is-success" onclick="closePIXDialog(true)">Create QR</button>
+        <button class="button" onclick="closePIXDialog(false)">Cancel</button>
+      </footer>
     </div>
-  </body>
+  </div>
+</body>
 
-  <script type="module">
-    import { PIX, EMVQR, PIXQRCode, rootEMVSchema, lookupNodeSchema } from "/js/pix-qrcode-wrapper.js";
+<script type="module">
+  import { PIX, EMVQR, PIXQRCode, rootEMVSchema, lookupNodeSchema } from "/js/pix-qrcode-wrapper.js";
 
-    function createTable( el, hdrs ) {
-      // Create a table element
-      let table = document.createElement("table");
+  function createTable(el, hdrs) {
+    // Create a table element
+    let table = document.createElement("table");
 
-      table.classList.add("table");
+    table.classList.add("table");
 
-      // Create table row tr element of a table
-      let tr = table.insertRow(-1);
+    // Create table row tr element of a table
+    let tr = table.insertRow(-1);
 
-      for (let i = 0; i < hdrs.length; i++) {
-        // Create the table header th element
-        let theader = document.createElement("th");
-        theader.innerText = hdrs[i];
+    for (let i = 0; i < hdrs.length; i++) {
+      // Create the table header th element
+      let theader = document.createElement("th");
+      theader.innerText = hdrs[i];
 
-        // Append columnName to the table row
-        tr.appendChild(theader);
-      }
-
-      el.innerHTML = "";
-      el.appendChild(table);
-
-      return table;
+      // Append columnName to the table row
+      tr.appendChild(theader);
     }
 
-    function insertRow( table, cols ) {
-      // Create a new row
-      let trow = table.insertRow(-1);
+    el.innerHTML = "";
+    el.appendChild(table);
 
-      for (let j = 0; j < cols.length; j++) {
-        let cell = trow.insertCell(-1);
+    return table;
+  }
 
-        // Inserting the cell at particular place
-        cell.innerHTML = cols[j];
-      }
+  function insertRow(table, cols) {
+    // Create a new row
+    let trow = table.insertRow(-1);
 
-      return trow;
+    for (let j = 0; j < cols.length; j++) {
+      let cell = trow.insertCell(-1);
+
+      // Inserting the cell at particular place
+      cell.innerHTML = cols[j];
     }
 
-    function renderQRTable( $el, value ) {
-      // Add the newly created table containing json data
-      //var el = document.getElementById("output").firstElementChild.nextElementSibling;
-      let qr = PIXQRCode.parseCode( value );
+    return trow;
+  }
 
-      function render( $el, qrn, schema, path ) {
-        let table = createTable( $el, [ "", "ID", "EMV Name", "Len", "Value" ] );
+  function renderQRTable($el, value) {
+    // Add the newly created table containing json data
+    //var el = document.getElementById("output").firstElementChild.nextElementSibling;
+    let qr = PIXQRCode.parseCode(value);
 
-        /*let elementMap = schema?.elementMap;
+    function render($el, qrn, schema, path) {
+      let table = createTable($el, ["", "ID", "EMV Name", "Len", "Value"]);
 
-        if ( schema?.identifiedElementMap ) {
-          if ( qrn.hasElement( EMVQR.TAG_TEMPLATE_GUI ) ) {
-            let gui = qrn.getElement( EMVQR.TAG_TEMPLATE_GUI ).content.toUpperCase();
+      /*let elementMap = schema?.elementMap;
 
-            for( let xx in schema.identifiedElementMap ) {
-              if ( xx.toUpperCase() == gui ) {
-                elementMap = {
-                  ...elementMap,
-                  ...schema.identifiedElementMap[xx]
-                }
+      if ( schema?.identifiedElementMap ) {
+        if ( qrn.hasElement( EMVQR.TAG_TEMPLATE_GUI ) ) {
+          let gui = qrn.getElement( EMVQR.TAG_TEMPLATE_GUI ).content.toUpperCase();
+
+          for( let xx in schema.identifiedElementMap ) {
+            if ( xx.toUpperCase() == gui ) {
+              elementMap = {
+                ...elementMap,
+                ...schema.identifiedElementMap[xx]
               }
             }
           }
-        }*/
+        }
+      }*/
 
-        for( let nn of qrn.elements ) {
-          const node = nn[1];
-          let ch = ( node.isTemplate() ) ? "-" : "";
-          let nodePath = (path ? `${path}:` : "" ) + ("00"+node.tag).slice(-2);
+      for (let nn of qrn.elements) {
+        const node = nn[1];
+        let ch = (node.isTemplate()) ? "-" : "";
+        let nodePath = (path ? `${path}:` : "") + ("00" + node.tag).slice(-2);
 
-          //let nodeSchema = elementMap?.[ node.tag ] ?? { name: 'unknown', elementMap: {} };
+        //let nodeSchema = elementMap?.[ node.tag ] ?? { name: 'unknown', elementMap: {} };
 
-          let nodeSchema = lookupNodeSchema( schema, qrn, node.tag );
+        let nodeSchema = lookupNodeSchema(schema, qrn, node.tag);
 
-          let trow = insertRow( table, [ ch, node.tag, nodeSchema.name, node.content.length, node.content ] );
+        let trow = insertRow(table, [ch, node.tag, nodeSchema.name, node.content.length, node.content]);
 
-          trow.setAttribute("id", `qr-node-${nodePath}` );
+        trow.setAttribute("id", `qr-node-${nodePath}`);
 
-          if ( node.isTemplate() ) {
-            trow.firstElementChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
+        if (node.isTemplate()) {
+          trow.firstElementChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
 
-            // Create a new row
-            trow = table.insertRow(-1);
-            trow.classList.add('is-collapsed');
+          // Create a new row
+          trow = table.insertRow(-1);
+          trow.classList.add('is-collapsed');
 
-            let cell = trow.insertCell(-1);
+          let cell = trow.insertCell(-1);
 
-            cell = trow.insertCell(-1);
-            cell.colSpan = 4;
+          cell = trow.insertCell(-1);
+          cell.colSpan = 4;
 
-            render( cell, node, nodeSchema, nodePath );
-          }
+          render(cell, node, nodeSchema, nodePath);
         }
       }
-      let qrn = qr.emvQRCode;
+    }
+    let qrn = qr.emvQRCode;
 
-      let elMap = rootEMVSchema.elementMap[26].identifiedElementMap = {};
-      elMap[ PIX.GUI ] = {
-        1: { name: "Chave PIX" },
-        2: { name: "Informações Adicionais"},
-        25: { name: "URL do Payload" }
-      }
-
-      render( $el, qrn, rootEMVSchema );
+    let elMap = rootEMVSchema.elementMap[26].identifiedElementMap = {};
+    elMap[PIX.GUI] = {
+      1: { name: "Chave PIX" },
+      2: { name: "Informações Adicionais" },
+      25: { name: "URL do Payload" }
     }
 
-    function openCloseRow( el ) {
-      let row = el.parentNode.nextSibling;
+    render($el, qrn, rootEMVSchema);
+  }
 
-      if ( row.classList.contains('is-collapsed') ) {
-        row.classList.remove('is-collapsed');
-        row.firstChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-up'></i></td>";
-      }
-      else {
-        row.classList.add('is-collapsed');
-        row.firstChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
-      }
+  function openCloseRow(el) {
+    let row = el.parentNode.nextSibling;
+
+    if (row.classList.contains('is-collapsed')) {
+      row.classList.remove('is-collapsed');
+      row.firstChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-up'></i></td>";
     }
-    //window.renderQRTable = renderQRTable;
-    window.openCloseRow = openCloseRow;
+    else {
+      row.classList.add('is-collapsed');
+      row.firstChild.outerHTML = "<td onclick='openCloseRow(this);'><i class='fas fa-chevron-down'></i></td>";
+    }
+  }
+  //window.renderQRTable = renderQRTable;
+  window.openCloseRow = openCloseRow;
 
-    var tabIndex = 0;
+  var tabIndex = 0;
 
-    function closePIXDialog( ok ) {
-      const $qrInfoModal = document.getElementById("qr-info-modal");
+  function closePIXDialog(ok) {
+    const $qrInfoModal = document.getElementById("qr-info-modal");
 
-      let qrInfo = {};
+    let qrInfo = {};
 
-      const defs = {
-        merchantCategoryCode: "0000",
-        transactionCurrency: 986,
-        countryCode: "BR",
-        merchantName: "PIX",
-        merchantCity: "Cidade",
-        txid: "***",
-      }
-
-      const nullable = (s) => ( ( s == '' ) ? undefined : s );
-      const cleanup = (obj) => Object.entries(obj).reduce((a,[k,v]) => (v === undefined ? a : (a[k]=v, a)), {})
-
-      switch( tabIndex ) {
-        case 0: // static
-          const staticFields = {
-            chave: nullable( document.getElementById("pix-chave").value ),
-            merchantName: nullable( document.getElementById("pix-nome").value ),
-            txid: nullable( document.getElementById("pix-txid").value ),
-            infoAdicional: nullable( document.getElementById("pix-info-add").value ),
-            value: nullable( document.getElementById("pix-value").value ),
-          };
-
-
-          qrInfo = {
-            type: "static",
-            ...defs,
-            ...cleanup(staticFields),
-          }
-
-          if ( ok && ( qrInfo.chave == undefined ) )
-            return;
-          break;
-
-
-        case 1: // dynamic
-          const dynamicFields = {
-            url: nullable( document.getElementById("pix-url").value ),
-          };
-
-          qrInfo = {
-            type: "dynamic",
-            ...defs,
-            ...cleanup(dynamicFields),
-          };
-
-          if ( ok && ( qrInfo.url == undefined ) )
-            return;
-          break;
-      }
-
-      if ( ok ) {
-        createCode( qrInfo );
-      }
-
-      $qrInfoModal.classList.remove("is-active");
+    const defs = {
+      merchantCategoryCode: "0000",
+      transactionCurrency: 986,
+      countryCode: "BR",
+      merchantName: "PIX",
+      merchantCity: "Cidade",
+      txid: "***",
     }
 
-    function showPIXDialog( qrInfos ) {
-      const $qrInfoModal = document.getElementById("qr-info-modal");
-      const $tabContainer = $qrInfoModal.getElementsByClassName("tabs")[0];
-      const $tabs = $tabContainer.getElementsByTagName("li")
+    const nullable = (s) => ((s == '') ? undefined : s);
+    const cleanup = (obj) => Object.entries(obj).reduce((a, [k, v]) => (v === undefined ? a : (a[k] = v, a)), {})
 
-      if ( !qrInfos ) {
-        qrInfos = { type: "static" };
-      }
+    switch (tabIndex) {
+      case 0: // static
+        const value = document.getElementById("pix-value").value;
+        const staticFields = {
+          chave: nullable(document.getElementById("pix-chave").value),
+          merchantName: nullable(document.getElementById("pix-nome").value),
+          txid: nullable(document.getElementById("pix-txid").value),
+          infoAdicional: nullable(document.getElementById("pix-info-add").value),
+          transactionAmount: (value.trim() != "") ? nullable(parseFloat(value)) : undefined,
+        };
 
-      if ( qrInfos.type == "static" ) {
-        document.getElementById("pix-chave").value = qrInfos.chave??"";
-        document.getElementById("pix-nome").value = qrInfos.merchantName??"";
-        document.getElementById("pix-txid").value = qrInfos.txid??"";
-        document.getElementById("pix-info-add").value = qrInfos.infoAdicional??"";
 
-        document.getElementById("pix-value").value = qrInfos.value??"";
-
-        changeTab( $tabs[0] );
-      }
-      else {
-        document.getElementById("pix-url").value = qrInfos.url??"";
-        changeTab( $tabs[1] );
-      }
-
-      $qrInfoModal.classList.add("is-active");
-    }
-
-    function changeTab( $selElement ) {
-      //const $qrInfoModal = document.getElementById("qr-info-modal");
-      //const $tabs = $qrInfoModal.getElementsByClassName("tabs")[0];
-      let $tabs = $selElement.parentNode.parentNode;
-
-      let $tabList = $tabs.getElementsByTagName("li");
-      let $tabContentList = $tabs.nextElementSibling.getElementsByClassName("content-tab");
-
-      tabIndex = 0;
-
-      for ( let tab = 0; tab < $tabList.length; ++tab ) {
-        let $tab = $tabList[ tab ];
-
-        $tab.classList.remove("is-active");
-        if ( $tab == $selElement ) {
-          tabIndex = tab;
+        qrInfo = {
+          type: "static",
+          ...defs,
+          ...cleanup(staticFields),
         }
-      }
 
-      for (let $tabContent of $tabContentList) {
-        $tabContent.classList.add("is-hidden");
-      }
+        if (ok && (qrInfo.chave == undefined))
+          return;
+        break;
 
-      $tabContentList[tabIndex].classList.remove("is-hidden");
-      $tabList[tabIndex].classList.add("is-active");
+
+      case 1: // dynamic
+        const dynamicFields = {
+          url: nullable(document.getElementById("pix-url").value),
+        };
+
+        qrInfo = {
+          type: "dynamic",
+          ...defs,
+          ...cleanup(dynamicFields),
+        };
+
+        if (ok && (qrInfo.url == undefined))
+          return;
+        break;
     }
 
-    window.changeTab = changeTab;
-    window.showPIXDialog = showPIXDialog;
-    window.closePIXDialog = closePIXDialog;
-
-    import {
-      decodeCode,
-      createCode,
-      extractCode,
-      fixCRC,
-      fetchDynamic,
-    } from "/js/pix-qrcode-wrapper.js";
-
-    async function decodeToTree( qr ) {
-      const $qrInfoModal = document.getElementById("output");
-      const $tabContainer = $qrInfoModal.getElementsByClassName("tabs")[0];
-      const $tabs = $tabContainer.getElementsByTagName("li")
-
-      changeTab( $tabs[ 0 ] );
-      await decodeCode( qr );
-
-      renderQRTable( document.getElementById( 'qr-tree'), qr );
-      changeTab( $tabs[ 1 ] );
+    if (ok) {
+      createCode(qrInfo);
     }
 
-    window.decodeCode = decodeCode;
-    window.createCode = createCode;
-    window.extractCode = extractCode;
-    window.fixCRC = fixCRC;
-    window.fetchDynamic = fetchDynamic;
+    $qrInfoModal.classList.remove("is-active");
+  }
 
-    window.decodeCode = decodeToTree;
+  function showPIXDialog(qrInfos) {
+    const $qrInfoModal = document.getElementById("qr-info-modal")
+    const $tabs = getTabElements($qrInfoModal);
 
-  </script>
-  <script nomodule>
-    alert(
-      "This browser DOES NOT support modern javascript modules\nTry chrome or firefox"
-    );
-  </script>
+    if (!qrInfos) {
+      qrInfos = { type: "static" };
+    }
 
-  <script>
-    document.addEventListener(
-      "DOMContentLoaded",
-      () => {
-        //let qrs = "00020101021226850014br.gov.bcb.pix2563pix.santander.com.br/qr/v2/b29bd384-c7cc-4156-8cae-4935c060c25252040000530398654040.025802BR5925ANA PAULA VIEIRA SALDANHA6009SAO PAULO62070503***63041C57";
+    if (qrInfos.type == "static") {
+      document.getElementById("pix-chave").value = qrInfos.chave ?? "";
+      document.getElementById("pix-nome").value = qrInfos.merchantName ?? "";
+      document.getElementById("pix-txid").value = qrInfos.txid ?? "";
+      document.getElementById("pix-info-add").value = qrInfos.infoAdicional ?? "";
 
-        //renderQRTable(qrs /*&& document.getElementById("qr-string").value.trim()*/);
-      },
-      false
-    );
-  </script>
+      document.getElementById("pix-value").value = qrInfos.transactionAmount?.toFixed(2) ?? "";
+
+      changeTab($tabs[0]);
+    }
+    else {
+      document.getElementById("pix-url").value = qrInfos.url ?? "";
+      changeTab($tabs[1]);
+    }
+
+    $qrInfoModal.classList.add("is-active");
+  }
+
+  function changeTab($selElement) {
+    //const $qrInfoModal = document.getElementById("qr-info-modal");
+    //const $tabs = $qrInfoModal.getElementsByClassName("tabs")[0];
+    const $tabs = $selElement.parentNode.parentNode;
+
+    const $tabList = $tabs.getElementsByTagName("li");
+    const $tabContentList = $tabs.nextElementSibling.getElementsByClassName("content-tab");
+
+    tabIndex = 0;
+
+    for (let tab = 0; tab < $tabList.length; ++tab) {
+      const $tab = $tabList[tab];
+
+      $tab.classList.remove("is-active");
+      if ($tab == $selElement) {
+        tabIndex = tab;
+      }
+    }
+
+    for (let $tabContent of $tabContentList) {
+      $tabContent.classList.add("is-hidden");
+    }
+
+    $tabContentList[tabIndex].classList.remove("is-hidden");
+    $tabList[tabIndex].classList.add("is-active");
+  }
+
+  window.changeTab = changeTab;
+  window.showPIXDialog = showPIXDialog;
+  window.closePIXDialog = closePIXDialog;
+
+  import {
+    decodeCode,
+    createCode,
+    extractCode,
+    fixCRC,
+    fetchDynamic,
+  } from "/js/pix-qrcode-wrapper.js";
+
+  function getTabElements($rootElement) {
+    const $qrInfoModal = $rootElement ?? document.getElementById("output");
+    const $tabContainer = $qrInfoModal.getElementsByClassName("tabs")[0];
+    const $tabs = $tabContainer.getElementsByTagName("li")
+
+    return $tabs;
+  }
+  async function decodeToTree(qr) {
+    const $tabs = getTabElements(document.getElementById("output"));
+
+    changeTab($tabs[0]);
+    await decodeCode(qr);
+
+    renderQRTable(document.getElementById('qr-tree'), qr);
+    changeTab($tabs[1]);
+  }
+
+  window.decodeCode = decodeCode;
+  window.createCode = createCode;
+  window.extractCode = extractCode;
+  window.fixCRC = fixCRC;
+  window.fetchDynamic = function () {
+    fetchDynamic().then((ok) => {
+      const $tabs = getTabElements(document.getElementById("output"));
+
+      if (ok)
+        changeTab($tabs[0]);
+    });
+  }
+
+  window.decodeCode = decodeToTree;
+
+</script>
+<script nomodule>
+  alert(
+    "This browser DOES NOT support modern javascript modules\nTry chrome or firefox"
+  );
+</script>
+
+<script>
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+      //let qrs = "00020101021226850014br.gov.bcb.pix2563pix.santander.com.br/qr/v2/b29bd384-c7cc-4156-8cae-4935c060c25252040000530398654040.025802BR5925ANA PAULA VIEIRA SALDANHA6009SAO PAULO62070503***63041C57";
+
+      //renderQRTable(qrs /*&& document.getElementById("qr-string").value.trim()*/);
+    },
+    false
+  );
+</script>
+
 </html>

@@ -1,17 +1,11 @@
 {
   "type": "module",
   "main": "dist/emv-merchant-qrcode.bundle.js",
-  "scripts": {
-    "bundle": "lerna run bundle",
-    "dnt": "(cd ./packages/pix-qrcode/test/web-test; deno run --allow-all dnt.ts)",
-    "esbuild": "yarn run dnt; ./node_modules/.bin/esbuild ./packages/pix-qrcode/test/web-test/npm/esm/pix-qrcode/test/web-test/src/pix-qrcode-wrapper.js --bundle --outfile=./packages/pix-qrcode/test/web-test/npm/esm/pix-qrcode/test/web-test/dist/pix-qrcode-wrapper.js --format=esm --target=esnext"
-  },
+  "scripts": {},
   "devDependencies": {
     "esbuild": "^0.14.39",
     "typescript-deno-plugin": "^1.31.0"
   },
   "name": "pix-qrcode-utils",
-  "dependencies": {
-    "typescript": "^4.3.1-rc"
-  }
+  "dependencies": {}
 }

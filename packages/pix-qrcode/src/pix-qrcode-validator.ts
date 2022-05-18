@@ -49,12 +49,12 @@ function addDynamicRules( v: RuleValidator<PIXQRCode> ) {
 }
 
 export function getPIXRuleValidator( ): RuleValidator<PIXQRCode> {
-  let v = RuleValidator.get<PIXQRCode>( { id: "PIXQR" } )
+  const v = RuleValidator.get<PIXQRCode>( { id: "PIXQR" } )
     .addRule( {
       id: "pix-mai",
       description: "Contains a PIX Merchant Account Information",
       rule: ( pix ) => {
-        let maiList = pix.emvQRCode.findIdentifiedTemplate( PIX.GUI, 26, 51 );
+        const maiList = pix.emvQRCode.findIdentifiedTemplate( PIX.GUI, 26, 51 );
 
         if ( maiList.length == 0 ) {
           throw new PIXQRCodeError( PIXQRErrorCode.MISSING_PIX_MAI, "PIX MAI not found")
@@ -69,10 +69,10 @@ export function getPIXRuleValidator( ): RuleValidator<PIXQRCode> {
       id: "pix-static-or-dynamic",
       description: "Contains a PIX Merchant Account Information",
       rule: ( pix ) => {
-        let pixMAI = pix.getMAI();
+        const pixMAI = pix.getMAI();
 
         // 3. PIX-MAI contents must indicate CHAVE or URL
-        let pixStatic = pixMAI.hasElement( PIX.TAG_MAI_CHAVE );
+        const pixStatic = pixMAI.hasElement( PIX.TAG_MAI_CHAVE );
 
         if( pixStatic ) {
           if ( pixMAI.hasElement( PIX.TAG_MAI_URL ) ) {

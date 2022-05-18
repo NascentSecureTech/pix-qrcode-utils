@@ -1,13 +1,13 @@
 {
   "name": "pix-qrcode-web-test",
   "type": "module",
-
   "scripts": {
-    "bundle": "deno bundle src/pix-qrcode-wrapper.ts js/pix-qrcode-wrapper.js"
+    "build": "deno run --allow-all build/esbuild.js",
+    "deploy": "scp -i ~/Documents/Nascent/AWS\\ Site/NascentAWSKey.pem ./js/pix-qrcode-wrapper.js  ec2-user@nascent.com.br:/var/www/pix-tools/pix-qrcode-utils/packages/pix-qrcode/test/web-test/js/pix-qrcode-wrapper.js"
   },
-
   "devDependencies": {
-    "typescript": "^4.0.2",
+    "esbuild": "^0.14.39",
     "typescript-deno-plugin": "^1.31.0"
-  }
+  },
+  "dependencies": {}
 }

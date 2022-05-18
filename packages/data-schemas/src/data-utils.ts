@@ -1,5 +1,5 @@
 export function stringToHex( str: string ): string {
-  let buf = new TextEncoder().encode(str);
+  const buf = new TextEncoder().encode(str);
 
   return [...buf]
     .map (b => b.toString (16).padStart (2, "0"))
@@ -7,7 +7,7 @@ export function stringToHex( str: string ): string {
 }
 
 export function numToHex( n: number, digits?: number ): string {
-  let hex = n.toString(16).toUpperCase();
+  const hex = n.toString(16).toUpperCase();
 
   if ( digits ) {
     return ("0".repeat( digits ) + hex).slice( -digits );

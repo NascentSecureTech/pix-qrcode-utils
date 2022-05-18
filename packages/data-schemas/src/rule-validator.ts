@@ -7,8 +7,8 @@ export interface RuleDescription<CTX> {
   rule?: ( context: CTX, v: RuleValidator<CTX> ) => void | ValidationResult | Promise<ValidationResult>;
 }
 
-export class ValidationError<EC=any> extends Error {
-  errorName: string = "";
+export class ValidationError<EC = {}> extends Error {
+  errorName = "";
 
   constructor( public errorCode: EC, message?: string ) {
     super( message );
@@ -21,19 +21,19 @@ export type ValidationResult = {
   error?: ValidationError;
 }
 
-export type ValidationObserver = ( v: RuleValidator<any>, result: ValidationResult ) => void;
+export type ValidationObserver = ( v: RuleValidator, result: ValidationResult ) => void;
 
-export class RuleValidator<CTX> {
+export class RuleValidator<CTX=any> {
   // ruleInfo: RuleInformation;
 
-  parent?: RuleValidator<any>;
+  parent?: RuleValidator;
   protected childValidators: RuleValidator<CTX>[] = [];
 
   constructor( public ruleInfo: RuleDescription<CTX> ) {
   }
 
   static get<CTX>( info: RuleDescription<CTX> ): RuleValidator<CTX> {
-    let v = new RuleValidator<CTX>( info );
+    const v = new RuleValidator<CTX>( info );
 
     return v;
   }
@@ -54,7 +54,7 @@ export class RuleValidator<CTX> {
     status: "none"
   };
 
-  protected handleResult( res: ValidationResult, observer?: ValidationObserver, isFinal: boolean = false ): ValidationResult {
+  protected handleResult( res: ValidationResult, observer?: ValidationObserver, isFinal = false ): ValidationResult {
     const previousStatus = this.result.status;
 
     switch( res.status ) {
@@ -94,7 +94,7 @@ export class RuleValidator<CTX> {
 
     if ( this.ruleInfo.rule ) {
       try {
-        let res = this.ruleInfo.rule( context, this );
+        const res = this.ruleInfo.rule( context, this );
 
         if ( res ) {
           result = ( res instanceof Promise ) ? await Promise.resolve<ValidationResult>( res ) : res;
@@ -114,7 +114,7 @@ export class RuleValidator<CTX> {
   async validate( context: CTX, observer?: ValidationObserver ): Promise<ValidationResult> {
     this.result = { status: "none" };
 
-    let shouldExec = !this.ruleInfo.when || this.ruleInfo.when( context, this );
+    const shouldExec = !this.ruleInfo.when || this.ruleInfo.when( context, this );
 
     if (shouldExec) {
       // Reset result status
@@ -125,11 +125,11 @@ export class RuleValidator<CTX> {
         this.handleResult( await this.executeRule( context ), observer );
       }
 
-      for( let child of this.childValidators ) {
+      for( const child of this.childValidators ) {
         if ( this.result.status != "running" )
           break;
 
-        let childResult = await child.validate( context, observer );
+          const childResult = await child.validate( context, observer );
 
         // Propagate child errors to me
         this.handleResult( childResult, observer );
