@@ -1,0 +1,5 @@
+{
+  tasks: {
+    "bundle": "deno bundle src/mod.ts dist/pix-api.bundle.js"
+  }
+}

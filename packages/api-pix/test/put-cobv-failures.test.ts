@@ -1,12 +1,11 @@
-//import { Cobranca } from "../../pix-data-schemas/src/mod.ts";
 import { initCobClient, mustFail, generateTXID } from "./api-test-helper.ts";
 import { testCobV_Nascent } from './cobv-test-data.ts';
 
 Deno.test({
   name: "COBV failures - TXID",
   fn: async () => {
-    let client = await initCobClient();
-    let txid = generateTXID();
+    const client = await initCobClient();
+    const txid = generateTXID();
 
     await mustFail( "GET TXID inexistente", () => {
       return client.getCob( txid );
@@ -43,8 +42,8 @@ Deno.test({
 Deno.test({
   name: "COBV failures - Calendario",
   fn: async () => {
-    let client = await initCobClient();
-    let txid = generateTXID();
+    const client = await initCobClient();
+    const txid = generateTXID();
 
     await mustFail( "Invalid characters in no dataDeVencimento", () => {
       return client.putCob(txid, {
@@ -76,8 +75,8 @@ Deno.test({
 Deno.test({
   name: "COBV failures - Chave",
   fn: async () => {
-    let client = await initCobClient();
-    let txid = generateTXID();
+    const client = await initCobClient();
+    const txid = generateTXID();
 
     await mustFail( "PUT: Chave não cadastrada", () => {
       return client.putCob(txid, {

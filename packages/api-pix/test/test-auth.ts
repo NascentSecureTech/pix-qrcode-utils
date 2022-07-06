@@ -1,7 +1,5 @@
-import { Cobranca } from "../../pix-data-schemas/src/mod.ts";
-import { CobClient, Fetcher, JSONFetcher, PayloadClient } from "../src/mod.ts";
-import { authenticate, getFetcher, generateTXID, timedExec } from "./api-test-helper.ts";
-import { testCobV_Nascent } from './cobv-test-data.ts';
+import { CobClient } from "../src/mod.ts";
+import { authenticate, getFetcher, timedExec } from "./api-test-helper.ts";
 
 Deno.test({
   name: "AUTH test",
@@ -15,18 +13,18 @@ Deno.test({
       mtlsProxyHost: "PROXY_URL", // se for rotear pelo mtlsProxy do pix-server
       */
 
-      // these are mine ..
-      ...(await import("./test-credentials.ts")).banrisulHomolNascent, //siCoob, // bancoDoBrasil, //gerenciaNet, //banrisulDev, //
+      debug: true,
 
-      //debug: true,
+      // these are mine ..
+      ...(await import("./test-credentials.ts")).banrisulHomolNascentMTLS // banrisulHomolSeanTLS//  Nascent,// DevSean, //siCoob, // bancoDoBrasil, //gerenciaNet, //banrisulDev, //
     };
     const token = await authenticate(config);
     const fetcher = getFetcher(config, token);
 
     // BB requires a non-standard query-param
-    let gwAppKey = (config as any)["gw-dev-app-key"];
+    const gwAppKey = (config as {["gw-dev-app-key"]?: string})["gw-dev-app-key"];
 
-    let client = new CobClient(
+    const client = new CobClient(
       fetcher,
       "cobv",
       gwAppKey ? { "gw-dev-app-key": gwAppKey } : undefined
@@ -37,7 +35,7 @@ Deno.test({
       init: async () => {
       },
       exec: async ( ) => {
-        const cobOut = await client.getCob(txid);
+        const _cobOut = await client.getCob(txid);
       },
       cleanup: async( ) => {
       },

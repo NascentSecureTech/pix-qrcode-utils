@@ -1,4 +1,4 @@
-import { FetchMethod, FetchHeaders, FetchOptions, Fetcher } from './fetcher.ts';
+import { FetchMethod, FetchHeaders, FetchOptions, Fetcher, AnyObject } from './fetcher.ts';
 
 /*//
 export type FetchMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -13,12 +13,12 @@ export type FetchQueryParams = Record<string, string>;
 export interface IJSONFetcher {
   readonly options: FetchOptions;
 
-  fetchJSON<RET extends Object = Object>(
+  fetchJSON<RET extends AnyObject = AnyObject>(
     method: FetchMethod,
     path: string
   ): Promise<RET>;
 
-  fetchJSON<DATA = object, RET = object>(
+  fetchJSON<DATA = AnyObject, RET = AnyObject>(
     method: FetchMethod,
     path: string,
     data?: DATA,
@@ -53,7 +53,7 @@ export class JSONFetcher implements IJSONFetcher {
   }
 
   //
-  async fetchJSON<DATA extends Object = Object, RET extends Object = Object>(
+  async fetchJSON<DATA extends AnyObject = AnyObject, RET extends AnyObject = AnyObject>(
     method: FetchMethod,
     path: string,
     data?: DATA,
@@ -67,7 +67,7 @@ export class JSONFetcher implements IJSONFetcher {
         console.log(method, decodeURIComponent(url.toString()));
       }
 
-      let fetchRequest = Fetcher.buildFetchRequest(
+      const fetchRequest = Fetcher.buildFetchRequest(
         method,
         this.options,
         data,

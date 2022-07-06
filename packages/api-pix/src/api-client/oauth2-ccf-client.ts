@@ -60,7 +60,7 @@ export class ClientCredentialsFlowClient {
   }
 
   //
-  async getAccessToken( scopes: string = "" ): Promise<OAuth2Token> {
+  async getAccessToken( scopes = "" ): Promise<OAuth2Token> {
     //if (this.token && this.tokenCreated) {
     //  return this.token;
     //}
@@ -70,7 +70,8 @@ export class ClientCredentialsFlowClient {
       scope: scopes,
     });
 
-    let json = await this.fetcher.fetchJSON<URLSearchParams, any>(
+    // deno-lint-ignore no-explicit-any
+    const json = await this.fetcher.fetchJSON<URLSearchParams, any>(
       "POST",
       this.config.tokenUri,
       postBody,

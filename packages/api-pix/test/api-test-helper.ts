@@ -8,50 +8,50 @@ import {
 } from "../src/mod.ts";
 import { CobClient } from "../src/mod.ts";
 
+export type AnyObject = Record<never, never>
+
 const config = {
   ...(await import("./test-credentials.ts")).banrisulHomolNascent, //siCoob, // bancoDoBrasil, //gerenciaNet, //banrisulDev, //
 
   //debug: true,
 };
 
-let clientCache: Record<string, CobClient> = {};
+const clientCache: Record<string, CobClient> = {};
 
-export async function initCobClient( cobType: "cob"|"cobv" = "cobv") {
-  if ( clientCache[ cobType ] ) {
-    return clientCache[ cobType ];
+export async function initCobClient(cobType: "cob" | "cobv" = "cobv") {
+  if (clientCache[cobType]) {
+    return clientCache[cobType];
   }
 
   const token = await authenticate(config);
   const fetcher = getFetcher(config, token);
 
   // BB requires a non-standard query-param
-  let gwAppKey = (config as any)["gw-dev-app-key"];
+  const gwAppKey = (config as Record<string, string>)["gw-dev-app-key"];
 
-  let client = new CobClient(
+  const client = new CobClient(
     fetcher,
     cobType,
     gwAppKey ? { "gw-dev-app-key": gwAppKey } : undefined
   );
 
-  clientCache[ cobType ] = client;
+  clientCache[cobType] = client;
 
   return client;
 }
 
 export async function authenticate(config: OAuth2ClientConfig) {
-  let fetcher;
-
-  fetcher = getFetcher(config);
+  const fetcher = getFetcher(config);
 
   const ccf = new ClientCredentialsFlowClient(config, fetcher);
 
-  let token = await ccf.getAccessToken("cob.read cob.write pix.read");
+  const token = await ccf.getAccessToken("cob.read cob.write pix.read");
   //console.log("TOKEN:", token);
 
   return token;
 }
 
-export function getFetcher(config: any, token?: OAuth2Token) {
+export function getFetcher(config: { baseUrl?: string, privateKey?: BufferSource, clientCert?: BufferSource, debug?: boolean }, token?: OAuth2Token) {
   const hdrs = token && {
     authorization: token.tokenType + " " + token.accessToken,
   };
@@ -68,7 +68,7 @@ export function getFetcher(config: any, token?: OAuth2Token) {
   return new JSONFetcher(fetchOptions);
 }
 
-export async function mustFail( testName: string, testFn:  ()=>Promise<any>, status: number[] ): Promise<{status: number, json: any}> {
+export async function mustFail(testName: string, testFn: () => Promise<unknown>, status: number[]): Promise<{ status: number, json: unknown }> {
   console.log(`Test: ${testName}`);
 
   try {
@@ -76,10 +76,10 @@ export async function mustFail( testName: string, testFn:  ()=>Promise<any>, sta
 
     throw new Error("Should have failed");
   }
-  catch( e ) {
-    if ( e instanceof FetchError ) {
-      if ( status.indexOf(e.status) >= 0 ) {
-        console.log( `PASS: ${e.status} - ${JSON.stringify(e.json)}`)
+  catch (e) {
+    if (e instanceof FetchError) {
+      if (status.indexOf(e.status) >= 0) {
+        console.log(`PASS: ${e.status} - ${JSON.stringify(e.json)}`)
 
         return {
           status: e.status,
@@ -93,97 +93,97 @@ export async function mustFail( testName: string, testFn:  ()=>Promise<any>, sta
 }
 
 export function generateTXID() {
-  let txid: string = crypto.randomUUID();
+  const txid: string = crypto.randomUUID();
 
   return txid.replaceAll("-", "");
 }
 
-export async function timedExec<STATE = object>( args: {
-    name?: string,
-    init?: (count: number, state: STATE)=>Promise<STATE>|undefined,
-    exec: (iter: number, state: STATE)=>Promise<void>,
-    cleanup?: (count: number, state: STATE)=>Promise<void>,
-    count?: number
-  } ) {
-  let count = args.count ?? 1
-  let times: number[] = [];
-  let state: STATE= {} as STATE;
+export async function timedExec<STATE = AnyObject>(args: {
+  name?: string,
+  init?: (count: number, state: STATE) => Promise<STATE> | undefined,
+  exec: (iter: number, state: STATE) => Promise<void>,
+  cleanup?: (count: number, state: STATE) => Promise<void>,
+  count?: number
+}) {
+  const count = args.count ?? 1
+  const times: number[] = [];
+  let state = {} as STATE;
 
   // 1st exec
-  if ( args.init )
-    state = ( await args.init( count, state ) ) ?? state;
+  if (args.init)
+    state = (await args.init(count, state)) ?? state;
 
   for (let iter = 0; iter < count; ++iter) {
-    let initTime = Date.now();
+    const initTime = Date.now();
 
     await args.exec(iter, state);
 
-    let elapsed = Date.now() - initTime;
+    const elapsed = Date.now() - initTime;
 
-    times.push( elapsed );
+    times.push(elapsed);
   }
 
-  if ( args.cleanup )
-    await args.cleanup( count, state );
+  if (args.cleanup)
+    await args.cleanup(count, state);
 
-  let sum = times.reduce( (prev, cur)=> prev + cur, 0 );
-  let max = times.reduce( (prev, cur)=> (cur > prev) ? cur : prev, 0 );
-  let min = times.reduce( (prev, cur)=> (cur < prev) ? cur : prev, times[0] );
-  let avg = sum / count;
-  let med = times.sort((a, b) => (a - b))[ Math.floor( count / 2) ];
+  const sum = times.reduce((prev, cur) => prev + cur, 0);
+  const max = times.reduce((prev, cur) => (cur > prev) ? cur : prev, 0);
+  const min = times.reduce((prev, cur) => (cur < prev) ? cur : prev, times[0]);
+  const avg = sum / count;
+  const med = times.sort((a, b) => (a - b))[Math.floor(count / 2)];
 
-  if ( args.name )
-    console.log( args.name );
+  if (args.name)
+    console.log(args.name);
 
-  console.log( `total(${count}):${sum}ms, min:${min}ms, max:${max}ms, avg:${avg}ms, median:${med}ms`);
+  console.log(`total(${count}):${sum}ms, min:${min}ms, max:${max}ms, avg:${avg}ms, median:${med}ms`);
 }
 
-export async function timedExecParallel<STATE = object>( args: {
-    name?: string,
-    init?: (count: number, state: STATE)=>Promise<STATE>|undefined,
-    exec: (iter: number, state: STATE)=>Promise<void>,
-    cleanup?: (count: number, state: STATE)=>Promise<void>,
-    count?: number
-  } ) {
-  let count = args.count ?? 1
-  let times: number[] = [];
-  let state: STATE= {} as STATE;
+export async function timedExecParallel<STATE = AnyObject>(args: {
+  name?: string,
+  init?: (count: number, state: STATE) => Promise<STATE> | undefined,
+  exec: (iter: number, state: STATE) => Promise<void>,
+  cleanup?: (count: number, state: STATE) => Promise<void>,
+  count?: number
+}) {
+  const count = args.count ?? 1
+  const times: number[] = [];
+  let state = {} as STATE;
 
   // 1st exec
-  if ( args.init )
-    state = ( await args.init( count, state ) ) ?? state;
+  if (args.init)
+    state = (await args.init(count, state)) ?? state;
 
-  let proms = [];
+  const proms = [];
 
-  let initTime = Date.now();
+  const initTime = Date.now();
   for (let iter = 0; iter < count; ++iter) {
-//    console.log( `${iter}: ${initTime}`)
+    //    console.log( `${iter}: ${initTime}`)
     proms.push(
       args.exec(iter, state)
-      .then( ()=> {
-        let elapsed = Date.now() - initTime;
-        //console.log( `${iter}: ${Date.now()} = ${elapsed}`)
+        .then(() => {
+          const elapsed = Date.now() - initTime;
+          //console.log( `${iter}: ${Date.now()} = ${elapsed}`)
 
-        times.push( elapsed );
-      })
+          times.push(elapsed);
+        })
     );
   }
-  let finish = Date.now() - initTime;
+  const finish = Date.now() - initTime;
 
-  let res = await Promise.allSettled( proms );
-  let ok = res.filter( p => p.status == "fulfilled" ).length;
+  const res = await Promise.allSettled(proms);
+  const ok = res.filter(p => p.status == "fulfilled").length;
 
-  if ( args.cleanup )
-    await args.cleanup( count, state );
+  if (args.cleanup)
+    await args.cleanup(count, state);
 
-  let sum = times.reduce( (prev, cur)=> prev + cur, 0 );
-  let max = times.reduce( (prev, cur)=> (cur > prev) ? cur : prev, 0 );
-  let min = times.reduce( (prev, cur)=> (cur < prev) ? cur : prev, times[0] );
-  let avg = sum / count;
-  let med = times.sort((a, b) => (a - b))[ Math.floor( count / 2) ];
+  const sum = times.reduce((prev, cur) => prev + cur, 0);
+  const max = times.reduce((prev, cur) => (cur > prev) ? cur : prev, 0);
+  const min = times.reduce((prev, cur) => (cur < prev) ? cur : prev, times[0]);
+  const avg = sum / count;
+  const med = times.sort((a, b) => (a - b))[Math.floor(count / 2)];
 
-  if ( args.name )
-    console.log( args.name );
+  if (args.name)
+    console.log(args.name);
 
-  console.log( `tps(${ok}/${count})=${Math.round(count*1000/max *100)/100}tps, send=${finish} first=${min}ms, last=${max}ms, avg=${avg}ms, median=${med}ms`);
+  console.log(`tps(${ok}/${count})=${Math.round(count * 1000 / max * 100) / 100}tps, send=${finish} first=${min}ms, last=${max}ms, avg=${avg}ms, median=${med}ms`);
 }

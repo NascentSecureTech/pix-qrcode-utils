@@ -1,3 +1,6 @@
+
+export type AnyObject = Record<never,never>
+
 //
 export type FetchMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -15,28 +18,26 @@ export interface FetchOptions {
 
   debug?: boolean;
 
-  privateKey?: any;
+  privateKey?: BufferSource;
 
-  clientCert?: any;
+  clientCert?: BufferSource;
 }
 
-export type FetchRequest = ReturnType<typeof Fetcher.buildFetchRequest>;
-
 export class FetchError extends Error {
-  json: any;
+  json: string | AnyObject = "";
 
-  constructor( public status: number, error: string | object ) {
-    super( (typeof error == "string") ? error : `HTTP status ${status}` );
+  constructor(public status: number, error: string | AnyObject) {
+    super((typeof error == "string") ? error : `HTTP status ${status}`);
 
-    if ( typeof error !== "string") {
+    if (typeof error !== "string") {
       this.json = error;
     }
   }
 }
 
-export namespace Fetcher {
+export const Fetcher = {
   //
-  export async function fetchRequest(
+  async fetchRequest(
     url: URL | string,
     fetchRequest: FetchRequest,
     options?: FetchOptions,
@@ -45,7 +46,7 @@ export namespace Fetcher {
     const debug = options?.debug;
 
     try {
-      if ( debug ) {
+      if (debug) {
         console.log(fetchRequest?.method, decodeURIComponent(url.toString()));
       }
 
@@ -70,7 +71,7 @@ export namespace Fetcher {
         }
 
         if ((resp.headers.get("content-type") ?? "").startsWith("application/json")) {
-          throw new FetchError(resp.status, text );
+          throw new FetchError(resp.status, text);
         }
 
         throw new FetchError(resp.status, `Fetch error: ${resp.status}\n${text}`);
@@ -80,16 +81,16 @@ export namespace Fetcher {
     } catch (e) {
       throw e;
     }
-  }
+  },
 
   //
-  export function buildFetchRequest(
+  buildFetchRequest(
     method: FetchMethod,
     options: FetchOptions,
-    data?: any,
+    data?: unknown,
     additionalHeaders?: FetchHeaders
   ) {
-    let headers = new Headers(options.headers);
+    const headers = new Headers(options.headers);
 
     if (additionalHeaders) {
       new Headers(additionalHeaders).forEach((value, key) => {
@@ -120,39 +121,40 @@ export namespace Fetcher {
 
     const client =
       options.privateKey && options.clientCert &&
-         (Deno as any).createHttpClient({
-            certChain: new TextDecoder().decode(options.clientCert),
-            privateKey: new TextDecoder().decode(options.privateKey),
-          })
-        //: undefined;
+      // deno-lint-ignore no-explicit-any
+      (Deno as any).createHttpClient({
+        certChain: new TextDecoder().decode(options.clientCert),
+        privateKey: new TextDecoder().decode(options.privateKey),
+      })
+    //: undefined;
 
-    let request = {
+    const request: FetchRequest = {
       method: method,
       body,
       headers,
       client,
-    }; // as RequestInit;
+    };
 
     return request;
-  }
+  },
 
-  export function buildFetchPath(
+  buildFetchPath(
     path: string,
     query?: FetchQueryParams,
     additionalQuery?: FetchQueryParams
   ): string {
     if (query || additionalQuery) {
-      let queryParams = new URLSearchParams(query);
+      const queryParams = new URLSearchParams(query);
 
       if (additionalQuery) {
-        let additionalParams = new URLSearchParams(additionalQuery);
+        const additionalParams = new URLSearchParams(additionalQuery);
 
         additionalParams.forEach((value, key) => {
           queryParams.append(key, value);
         });
       }
 
-      let queryString = queryParams.toString();
+      const queryString = queryParams.toString();
 
       if (queryString.length > 0) {
         path += "?" + queryString;
@@ -164,3 +166,7 @@ export namespace Fetcher {
     return path;
   }
 }
+
+// deno-lint-ignore no-explicit-any
+export type FetchRequest = RequestInit & { client: any }; //ReturnType<typeof Fetcher.buildFetchRequest>;
+
