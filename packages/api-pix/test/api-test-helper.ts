@@ -45,7 +45,14 @@ export async function authenticate(config: OAuth2ClientConfig) {
 
   const ccf = new ClientCredentialsFlowClient(config, fetcher);
 
-  const token = await ccf.getAccessToken("cob.read cob.write pix.read");
+  const token = await ccf.getAccessToken(`
+  cob.read cob.write 
+  cobv.read cobv.write 
+  lotecobv.read lotecobv.write 
+  pix.read pix.write 
+  payloadlocation.read payloadlocation.write
+  webhook.read webhook.write 
+  `);
   //console.log("TOKEN:", token);
 
   return token;

@@ -43,7 +43,7 @@ export const Fetcher = {
     options?: FetchOptions,
     isOK?: (status: number) => boolean
   ): Promise<Response> {
-    const debug = options?.debug;
+    const debug = options?.debug || true;
 
     try {
       if (debug) {

@@ -1,4 +1,5 @@
-import { CobClient, JSONFetcher, Cobranca, PartialCobranca } from '../src/mod.ts';
+import { CobClient, JSONFetcher } from '../src/mod.ts';
+import { Cobranca, PartialCobranca } from '../src/deps.ts';
 
 const baseUrl = "http://localhost:9666/api/";
 
