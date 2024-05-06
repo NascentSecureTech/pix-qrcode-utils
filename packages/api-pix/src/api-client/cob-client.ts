@@ -1,23 +1,25 @@
 import { Fetcher, IJSONFetcher, FetchQueryParams } from './mod.ts';
-import { Cobranca, PartialCobranca, CobType, PagedListCobParams } from '../deps.ts';
+import { Cobranca, PartialCobranca, CobType, PagedListCobParams, CobsList } from '../deps.ts';
 
 export class CobClient {
   constructor( public readonly fetcher: IJSONFetcher, public readonly cobType: CobType, public additionalQuery?: FetchQueryParams ) {
     //
   }
 
-  async getCobs( params: PagedListCobParams ): Promise<Cobranca[]> {
-    const pag = params.paginacao ?? {};
+
+
+  async getCobs( params?: PagedListCobParams ): Promise<CobsList> {
+    const pag = params?.paginacao ?? {};
 
     //Object.keys(params).forEach(key => obj[key] === undefined ? delete obj[key] : {});
 
     const query: Record<string,string|undefined> = {
       inicio: params?.inicio.toISOString().slice(0,-5)+"Z",
       fim: params?.fim.toISOString().slice(0,-5)+"Z",
-      cpf: params.cpf,
-      cnpj: params.cnpj,
-      locationPresente: (params.locationPresente != undefined) ? (params.locationPresente ? "true":"false"):undefined,
-      status: params.status,
+      cpf: params?.cpf,
+      cnpj: params?.cnpj,
+      locationPresente: (params?.locationPresente != undefined) ? (params.locationPresente ? "true":"false"):undefined,
+      status: params?.status,
       "paginacao.paginaAtual": (pag.paginaAtual !== undefined) ? ""+pag.paginaAtual : undefined,
       "paginacao.itensPorPagina": (pag.itensPorPagina !== undefined) ? ""+pag.itensPorPagina : undefined,
     };
@@ -27,7 +29,7 @@ export class CobClient {
 
     const path = Fetcher.buildFetchPath( `${this.cobType}`, q2 );
 
-    const cobs = await this.fetcher.fetchJSON<Cobranca[]>( "GET", path );
+    const cobs = await this.fetcher.fetchJSON<CobsList>( "GET", path );
 
     return cobs;
   }

@@ -1,4 +1,4 @@
-import { Status } from '../../cobranca/mod.ts';
+import { Cobranca, Status } from '../../cobranca/mod.ts';
 import { Paginacao } from '../paginacao.ts';
 
 export interface ListCobParams {
@@ -15,10 +15,22 @@ export interface ListCobParams {
   //
   status?: Status;
   //
-  loteCobvId?: Number;
+  loteCobvId?: number;
+}
+
+export interface ResultPaginacao extends Paginacao {
+  quantidadeDePaginas: number;
+  quantidadeTotalDeItens: number;
 }
 
 export interface PagedListCobParams extends ListCobParams {
   //
   paginacao?: Paginacao;
+}
+
+export interface CobsList {
+  parametros: {
+    paginacao: ResultPaginacao;
+  },
+  cobs: Cobranca[];
 }

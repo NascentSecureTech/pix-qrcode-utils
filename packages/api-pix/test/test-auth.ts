@@ -28,7 +28,9 @@ Deno.test({
       debug: true,
 
       // these are mine ..
-      ...(await import("./test-credentials.ts")).banrisulHomolNascentMTLS//banrisulHomolNascentORG// banrisulHomolNascentMTLS  // NascentMTLS // banrisulHomolSeanTLS//  Nascent,// DevSean, //siCoob, // bancoDoBrasil, //gerenciaNet, //banrisulDev, //
+      ...(await import("./test-credentials.ts")).banrisulProduction
+        //.banrisulHomolJairoMTLS
+        // banrisulHomolNascentMTLS//banrisulHomolNascentORG// banrisulHomolNascentMTLS  // NascentMTLS // banrisulHomolSeanTLS//  Nascent,// DevSean, //siCoob, // bancoDoBrasil, //gerenciaNet, //banrisulDev, //
     };
     const token = await authenticate(config);
     const fetcher = getFetcher(config, token);
@@ -54,7 +56,44 @@ Deno.test({
       gwAppKey ? { "gw-dev-app-key": gwAppKey } : undefined
     );
 
-    for (let i = 0; i < 1; ++i) {
+    let items = 0;
+    const itensPorPagina = 1000;
+    let paginaAtual = Math.trunc(0 / itensPorPagina);
+    let totalItems = -1;
+
+    paginaAtual = 1;
+    while( totalItems == -1 || items <= totalItems ) {
+      const t = new Date();
+
+      //if (paginaAtual == 4) break;
+
+      const cobsIn = await client.getCobs( {
+        inicio: new Date("Thu, 1 Jan 2024 00:00:00 GMT"),
+        fim: new Date(),
+        paginacao: {
+          itensPorPagina,
+          paginaAtual,
+        }
+      });
+
+      const pag = cobsIn.parametros.paginacao?.paginaAtual ?? 0;
+      totalItems = cobsIn.parametros.paginacao?.quantidadeTotalDeItens;
+
+      if ( pag != paginaAtual )
+        break;
+      if (cobsIn.cobs.length == 0)
+        break;
+      items += cobsIn.cobs.length;
+
+      paginaAtual = pag + 1;
+      console.log( "Page: " + paginaAtual, " = " + (new Date().getTime() - t.getTime() ) + "ms");
+
+//      break;
+    }
+
+    console.log( "Total: ", items);
+
+    for (let i = 0; i < 0; ++i) {
       let txid: string = crypto.randomUUID();
       txid = txid.replaceAll("-", "");
       //console.log( txid );
@@ -62,7 +101,7 @@ Deno.test({
       //txid = 'd62083b450ed4d0a9efe8f983c145ff4';
 
       ///*
-      let cobIn = await client.putCob(txid, { 
+      const cobIn = await client.putCob(txid, { 
         ...testCob_Nascent,
         chave: "9e25c9c1-27f9-4cc6-9263-03080110dc83",
         infoAdicionais: undefined

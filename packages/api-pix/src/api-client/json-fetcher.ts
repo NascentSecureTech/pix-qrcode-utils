@@ -97,7 +97,7 @@ export class JSONFetcher implements IJSONFetcher {
         json = await resp.json();
 
         if (this.options.debug) {
-          console.log("Body:", json);
+          console.log("Body:", JSON.stringify(json, null, 2));
         }
       }
 
