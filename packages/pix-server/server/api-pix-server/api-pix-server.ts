@@ -7,7 +7,7 @@ import { CobIdentifier, CobListIdentifier, PixApiCobService } from "../../../api
 import { MemoryCobStore } from "./memory-cob-data-store.ts";
 import { MemoryLocStore } from "./memory-loc-data-store.ts";
 
-import { getBodyJSON, getRouteParams, getQueryParams } from "./helpers.ts";
+import { getBodyJSON } from "./helpers.ts";
 
 function convertDate(s: string): Date {
   return new Date(s);
@@ -33,8 +33,8 @@ export function cobRouter(
 
   router
     .get(path + "/" + cobType, async (context) => {
-      let rawParams = getQueryParams(context);
-      let pag = {
+      const rawParams = context.params;
+      const pag = {
         paginaAtual: rawParams["paginacao.paginaAtual"],
         itensPorPagina: rawParams["paginacao.itensPorPagina"],
       }
@@ -81,7 +81,7 @@ export function cobRouter(
       //      context.response.body = "Hello world!";
     })
     .get(path + "/" + cobType + "/:txid", async (context) => {
-      const { txid } = getRouteParams(context);
+      const { txid } = context.params;
 
       try {
         const id: CobIdentifier = {
@@ -98,15 +98,15 @@ export function cobRouter(
       }
     })
     .post(path + "/" + cobType + "/:txid", async (context) => {
-      const body = context.request.body();
+      const body = context.request.body;
 
       console.log( context.request.headers );
       console.log( body.type );
-      console.log( await (body.value) );
+      console.log( await (body.text) );
       context.response.body = "OK";
     })
     .put(path + "/" + cobType + "/:txid", async (context) => {
-      const { txid } = getRouteParams(context);
+      const { txid } = context.params;
       console.log(txid);
 
       const cobIn = await getBodyJSON<Cobranca>(context);
@@ -126,7 +126,7 @@ export function cobRouter(
       }
     })
     .patch(path + "/" + cobType + "/:txid", async (context) => {
-      const { txid } = getRouteParams(context);
+      const { txid } = context.params;
       console.log(txid);
 
       const cobIn = await getBodyJSON<Cobranca>(context);
