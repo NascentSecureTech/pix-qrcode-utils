@@ -36,6 +36,13 @@ export interface EMVQRCodeBasicElements extends EMVQRCodeMandatoryElements {
   transactionAmount?: number;     // EL54
 }
 
+function readTransactionAmount(raw: string): number {
+  if (!/^[\d]+(\.\d\d)?$/.test(raw)) {
+    return Number.NaN;
+  }
+  return Number(raw);
+}
+
 function convertCode(qrCode = '', encoding?: 'utf8' | 'base64'): string {
   switch (encoding ?? 'utf8') {
     case 'utf8':
@@ -146,7 +153,7 @@ extractElements(): EMVQRCodeBasicElements {
     merchantName: getDataElement(EMVQR.TAG_MERCHANT_NAME),
     merchantCity: getDataElement(EMVQR.TAG_MERCHANT_CITY),
 
-    transactionAmount: parseFloat(getDataElement(EMVQR.TAG_TRANSACTION_AMOUNT)),
+    transactionAmount: readTransactionAmount(getDataElement(EMVQR.TAG_TRANSACTION_AMOUNT)),
     oneTime: getDataElement(EMVQR.TAG_POI_METHOD) == '12'
   }
 

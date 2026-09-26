@@ -135,3 +135,65 @@ Deno.test( {
         }
   } );
 } );
+
+Deno.test("a comma is not a decimal mark in the transaction amount", async () => {
+  const hello = testCodes["HelloWorld"].qr;
+  const qr = EMVMerchantQRCode.parseCode(hello);
+
+  if (qr.getElement(54).content != "23.72") {
+    throw new Error("expected the sample amount 23.72");
+  }
+  if (qr.extractElements().transactionAmount !== 23.72) {
+    throw new Error("sample amount should read as 23.72");
+  }
+
+  const sample = await qr.validateCode();
+  if (sample.status != "pass") {
+    throw new Error("amount 23.72 should validate");
+  }
+
+  qr.getElement(54).content = "10,50";
+  qr.buildQRString();
+  const comma = await qr.validateCode();
+  if (comma.status == "pass") {
+    throw new Error("amount 10,50 was accepted");
+  }
+  if (qr.extractElements().transactionAmount === 10) {
+    throw new Error("amount 10,50 was read as 10");
+  }
+
+  qr.getElement(54).content = "10X50";
+  qr.buildQRString();
+  const junk = await qr.validateCode();
+  if (junk.status == "pass") {
+    throw new Error("amount 10X50 was accepted");
+  }
+
+  qr.getElement(54).content = "100";
+  qr.buildQRString();
+  const whole = await qr.validateCode();
+  if (whole.status != "pass") {
+    throw new Error("amount 100 should stay valid");
+  }
+
+  qr.getElement(54).content = "23.72";
+  qr.buildQRString();
+  const restored = await qr.validateCode();
+  if (restored.status != "pass") {
+    throw new Error("amount 23.72 should stay valid");
+  }
+
+  qr.newDataElement(56, "9,85");
+  qr.buildQRString();
+  const fee = await qr.validateCode();
+  if (fee.status == "pass") {
+    throw new Error("convenience fee 9,85 was accepted");
+  }
+
+  qr.getElement(56).content = "9.85";
+  qr.buildQRString();
+  const feeDot = await qr.validateCode();
+  if (feeDot.status != "pass") {
+    throw new Error("convenience fee 9.85 should stay valid");
+  }
+});
