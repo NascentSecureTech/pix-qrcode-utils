@@ -147,7 +147,7 @@ const rootSchemaMap: QRElementSchemaMap = {
   54: {
     name: 'Transaction Amount',
     length: { max: 13 },
-    pattern: /^[\d]+(.\d\d)?$/
+    pattern: /^[\d]+(\.\d\d)?$/
   },
   55: {
     name: 'Tip or Convenience Indicator',
@@ -157,7 +157,7 @@ const rootSchemaMap: QRElementSchemaMap = {
   56: {
     name: 'Value of Convenience Fee Fixed',
     length: { max: 13 },
-    pattern: /^[\d]+(.\d\d)?$/
+    pattern: /^[\d]+(\.\d\d)?$/
 //    presence: 'C',
   },
   57: {
