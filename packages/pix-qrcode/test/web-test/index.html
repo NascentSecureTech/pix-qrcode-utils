@@ -499,8 +499,8 @@
   window.createCode = createCode;
   window.extractCode = extractCode;
   window.fixCRC = fixCRC;
-  window.fetchDynamic = function () {
-    fetchDynamic().then((ok) => {
+  window.fetchDynamic = function (url) {
+    fetchDynamic(url).then((ok) => {
       const $tabs = getTabElements(document.getElementById("output"));
 
       if (ok)
