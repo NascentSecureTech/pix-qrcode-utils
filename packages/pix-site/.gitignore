@@ -1,0 +1,3 @@
+# build output (deno task build)
+public/index.html
+public/js/

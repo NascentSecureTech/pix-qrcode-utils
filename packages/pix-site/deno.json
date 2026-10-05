@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "build": "mkdir -p public/js && deno bundle --format=esm -o public/js/pix-qrcode-wrapper.js ../pix-qrcode/test/web-test/src/pix-qrcode-wrapper.ts && cp ../pix-qrcode/test/web-test/index.html public/index.html",
+    "dev": {
+      "command": "deno run --allow-net --allow-read --watch main.ts",
+      "dependencies": ["build"]
+    }
+  }
+}
