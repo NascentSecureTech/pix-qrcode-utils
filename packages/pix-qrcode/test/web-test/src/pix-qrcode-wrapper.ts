@@ -159,7 +159,8 @@ export async function fetchDynamic( value: string ) {
     let url = tmpl.getElement(PIX.TAG_MAI_URL).content;
     console.log( url );
 
-    url = "pix.nascent.com.br/proxy?url=" + encodeURI( "https://" + url );
+    const token = document.querySelector( 'meta[name="proxy-token"]' )?.getAttribute( "content" ) ?? "";
+    url = "pix.nascent.com.br/proxy?token=" + encodeURIComponent( token ) + "&url=" + encodeURI( "https://" + url );
 
     const payload = new PIXPayloadRetriever().fetchPayload( url );
 

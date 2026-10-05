@@ -10,6 +10,39 @@
 
 import { serveDir } from "jsr:@std/http@1/file-server";
 
+const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+const TOKEN_PLACEHOLDER = "__PROXY_TOKEN__";
+
+// Set PROXY_TOKEN_SECRET in Deno Deploy; the random fallback only works for a single isolate.
+const secret = Deno.env.get("PROXY_TOKEN_SECRET") ?? crypto.randomUUID();
+if (!Deno.env.get("PROXY_TOKEN_SECRET")) console.warn("PROXY_TOKEN_SECRET not set; using ephemeral secret");
+const hmacKey = await crypto.subtle.importKey(
+  "raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"],
+);
+
+const toHex = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+
+async function makeToken(): Promise<string> {
+  const exp = String(Date.now() + TOKEN_TTL_MS);
+  const sig = await crypto.subtle.sign("HMAC", hmacKey, new TextEncoder().encode(exp));
+  return `${exp}.${toHex(sig)}`;
+}
+
+async function verifyToken(token: string | null): Promise<boolean> {
+  const m = token?.match(/^(\d+)\.([0-9a-f]{64})$/);
+  if (!m || Number(m[1]) < Date.now()) return false;
+  const sig = Uint8Array.from(m[2].match(/../g)!, (h) => parseInt(h, 16));
+  return crypto.subtle.verify("HMAC", hmacKey, sig, new TextEncoder().encode(m[1]));
+}
+
+async function serveIndex(req: Request): Promise<Response> {
+  const res = await serveDir(req, { fsRoot: PUBLIC_DIR, quiet: true });
+  if (res.status !== 200) return res;
+  const html = (await res.text()).replace(TOKEN_PLACEHOLDER, await makeToken());
+  const headers = new Headers({ "content-type": "text/html; charset=UTF-8", "cache-control": "no-store" });
+  return new Response(html, { headers });
+}
+
 const PUBLIC_DIR = `${import.meta.dirname}/public`;
 const CODES_DELAY_MS = 3000;
 
@@ -37,7 +70,9 @@ function isBlockedHost(hostname: string): boolean {
 }
 
 async function handleProxy(req: Request): Promise<Response> {
-  const remoteUrl = new URL(req.url).searchParams.get("url");
+  const params = new URL(req.url).searchParams;
+  if (!(await verifyToken(params.get("token")))) return new Response("Invalid token", { status: 401 });
+  const remoteUrl = params.get("url");
   console.log("URL = ", remoteUrl);
   if (!remoteUrl) return new Response("Missing url", { status: 400 });
 
@@ -82,8 +117,9 @@ Deno.serve(async (req) => {
   }
   if (pathname === `${DECODER_ALIAS}/` || pathname === `${DECODER_ALIAS}/index.html`) {
     url.pathname = "/";
-    return serveDir(new Request(url, req), { fsRoot: PUBLIC_DIR, quiet: true });
+    return serveIndex(new Request(url, req));
   }
+  if (pathname === "/" || pathname === "/index.html") return serveIndex(req);
 
   if (pathname === "/codes" || pathname.startsWith("/codes/")) {
     await new Promise((r) => setTimeout(r, CODES_DELAY_MS));
